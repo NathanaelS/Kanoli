@@ -18,6 +18,16 @@ struct KanoliApp: App {
     // router carries the selected file URL into ContentView after reopening.
     @State private var commandRouter = AppCommandRouter()
 
+    init() {
+#if os(macOS)
+        // Ensure the Dock icon uses the bundled AppIcon asset even when the
+        // system icon cache lags behind recent asset updates.
+        if let appIcon = NSImage(named: "AppIcon") {
+            NSApplication.shared.applicationIconImage = appIcon
+        }
+#endif
+    }
+
     var body: some Scene {
         WindowGroup(id: "main") {
             ContentView()
