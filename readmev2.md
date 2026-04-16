@@ -21,6 +21,8 @@ Open an issue in this repository and include:
 - Steps to reproduce
 - Any sample board file (if safe to share)
 
+Issue tracker: [GitHub Issues](https://github.com/NathanaelS/Kanoli/issues)
+
 ## Building Kanoli
 
 To run Kanoli locally:
@@ -60,8 +62,8 @@ Kanoli takes inspiration from:
 
 ## License
 
-No dedicated `LICENSE` file is currently present in this repository.
-If you plan to distribute Kanoli publicly, add a project license file.
+Kanoli is licensed under the MIT License.
+See [LICENSE](LICENSE) for details.
 
 [plaintext-productivity]: https://plaintext-productivity.net/
 [todotxt]: https://github.com/todotxt/todo.txt

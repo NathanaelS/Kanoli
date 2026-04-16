@@ -31,3 +31,12 @@ UI color theming is based entirely on the Aura theme created by Dalton Menezes, 
 **Todo Lists**
 
 Todo.txt functionality is built into the system.
+
+**License**
+
+Kanoli is licensed under the MIT License.
+See [LICENSE](LICENSE) for details.
+
+**Issues and Security Reporting**
+
+Please open issues here: https://github.com/NathanaelS/Kanoli/issues
