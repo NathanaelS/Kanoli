@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>Kanoli.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>F79BA0052F88BD8C00F3F7B0</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F79BA0172F88BD8D00F3F7B0</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F79BA0212F88BD8D00F3F7B0</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>
