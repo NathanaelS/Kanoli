@@ -149,6 +149,11 @@ final class BoardSessionStore {
         try MarkdownBoardStore.save(columns: columns, to: activeBoardFileURL)
     }
 
+    func importJSONBoard(from jsonURL: URL, to boardURL: URL) throws {
+        try JSONBoardStore.importBoard(from: jsonURL, to: boardURL)
+        _ = try loadBoard(from: boardURL)
+    }
+
     func appendItem(_ item: BoardItem, to boardURL: URL) throws {
         guard beginAccessingSecurityScopedResourceIfNeeded(for: boardURL) else {
             throw CocoaError(.fileReadNoPermission)

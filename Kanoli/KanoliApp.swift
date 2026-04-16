@@ -46,6 +46,10 @@ private struct KanoliFileCommands: Commands {
                 presentOpenPanel()
             }
             .keyboardShortcut("o")
+
+            Button("Import Trello Board...") {
+                presentImportJSONPanel()
+            }
         }
     }
 
@@ -82,6 +86,41 @@ private struct KanoliFileCommands: Commands {
             } catch {
                 presentError(error)
             }
+        }
+#endif
+    }
+
+    private func presentImportJSONPanel() {
+#if os(macOS)
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.json]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.canCreateDirectories = false
+        openPanel.directoryURL = defaultDocumentsDirectoryURL
+
+        guard openPanel.runModal() == .OK, let jsonURL = openPanel.url else {
+            return
+        }
+
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.markdownText]
+        savePanel.canCreateDirectories = true
+        savePanel.directoryURL = jsonURL.deletingLastPathComponent()
+        savePanel.nameFieldStringValue = jsonURL
+            .deletingPathExtension()
+            .appendingPathExtension("md")
+            .lastPathComponent
+
+        guard savePanel.runModal() == .OK, let boardURL = savePanel.url else {
+            return
+        }
+
+        do {
+            try JSONBoardStore.importBoard(from: jsonURL, to: boardURL)
+            open(boardURL)
+        } catch {
+            presentError(error)
         }
 #endif
     }

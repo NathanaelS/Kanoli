@@ -84,6 +84,195 @@ final class KanoliTests: XCTestCase {
         XCTAssertEqual(item.labels, ["AI"])
     }
 
+    func testJSONBoardStoreDecodesBoardColumnsItemsNotesAndChecklists() throws {
+        let data = """
+        {
+          "columns": [
+            {
+              "title": "Backlog",
+              "items": [
+                {
+                  "id": "11111111-1111-1111-1111-111111111111",
+                  "title": "Import JSON",
+                  "notes": [
+                    "Plain note",
+                    {
+                      "createdAt": "2026-04-13T12:30:00-07:00",
+                      "text": "Dated note"
+                    }
+                  ],
+                  "dueDate": "2026-04-20",
+                  "priority": "A",
+                  "labels": ["import", "json"],
+                  "checklists": [
+                    {
+                      "id": "22222222-2222-2222-2222-222222222222",
+                      "title": "Steps",
+                      "items": [
+                        {
+                          "id": "33333333-3333-3333-3333-333333333333",
+                          "text": "Choose file",
+                          "isDone": true
+                        },
+                        {
+                          "text": "Save markdown"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        let columns = try JSONBoardStore.decodeBoard(from: data)
+        let item = try XCTUnwrap(columns.first?.items.first)
+        let checklist = try XCTUnwrap(item.checklists.first)
+
+        XCTAssertEqual(columns.first?.title, "Backlog")
+        XCTAssertEqual(item.id, UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        XCTAssertEqual(item.title, "Import JSON")
+        XCTAssertEqual(item.notes.map(\.text), ["Plain note", "Dated note"])
+        XCTAssertEqual(NoteDateFormatter.markdownFormatter.string(from: try XCTUnwrap(item.notes.last?.createdAt)), "2026-04-13T12:30:00-07:00")
+        XCTAssertEqual(TodoDateFormatter.dateFormatter.string(from: try XCTUnwrap(item.dueDate)), "2026-04-20")
+        XCTAssertEqual(item.priority, "A")
+        XCTAssertEqual(item.labels, ["import", "json"])
+        XCTAssertEqual(checklist.id, UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        XCTAssertEqual(checklist.items.map(\.text), ["Choose file", "Save markdown"])
+        XCTAssertEqual(checklist.items.map(\.isDone), [true, false])
+    }
+
+    func testJSONBoardImportCanBeSavedAsMarkdownBoard() throws {
+        let data = """
+        {
+          "columns": [
+            {
+              "title": "Doing",
+              "items": [
+                {
+                  "title": "Generated card",
+                  "dueDate": "2026-04-21",
+                  "labels": ["generated"]
+                }
+              ]
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+        let jsonURL = temporaryJSONURL()
+        let fileURL = temporaryMarkdownURL()
+
+        try data.write(to: jsonURL)
+        try JSONBoardStore.importBoard(from: jsonURL, to: fileURL)
+        let result = MarkdownBoardStore.loadBoard(from: fileURL)
+        let item = try XCTUnwrap(result.columns.first?.items.first)
+
+        XCTAssertNil(result.errorMessage)
+        XCTAssertEqual(result.columns.first?.title, "Doing")
+        XCTAssertEqual(item.title, "Generated card")
+        XCTAssertEqual(item.labels, ["generated"])
+        XCTAssertEqual(TodoDateFormatter.dateFormatter.string(from: try XCTUnwrap(item.dueDate)), "2026-04-21")
+    }
+
+    func testJSONBoardStoreRejectsInvalidDueDate() throws {
+        let data = """
+        {
+          "columns": [
+            {
+              "title": "Backlog",
+              "items": [
+                {
+                  "title": "Bad date",
+                  "dueDate": "04/21/2026"
+                }
+              ]
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        XCTAssertThrowsError(try JSONBoardStore.decodeBoard(from: data))
+    }
+
+    func testJSONBoardStoreDecodesTrelloBoardExport() throws {
+        let data = """
+        {
+          "lists": [
+            {
+              "id": "list-doing",
+              "name": "Doing",
+              "pos": 1
+            }
+          ],
+          "cards": [
+            {
+              "id": "card-1",
+              "idList": "list-doing",
+              "name": "Import from Trello",
+              "desc": "Bring in existing board",
+              "idLabels": ["label-1"],
+              "pos": 1,
+              "due": "2026-04-20T17:00:00.000Z"
+            }
+          ],
+          "checklists": [
+            {
+              "id": "checklist-1",
+              "idCard": "card-1",
+              "name": "Steps",
+              "pos": 1,
+              "checkItems": [
+                {
+                  "name": "Map lists",
+                  "pos": 1,
+                  "state": "incomplete"
+                },
+                {
+                  "name": "Map cards",
+                  "pos": 2,
+                  "state": "complete"
+                }
+              ]
+            }
+          ],
+          "labels": [
+            {
+              "id": "label-1",
+              "name": "import"
+            }
+          ],
+          "actions": [
+            {
+              "type": "commentCard",
+              "date": "2026-04-12T12:00:00.000Z",
+              "data": {
+                "text": "Comment note",
+                "card": {
+                  "id": "card-1"
+                }
+              }
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        let columns = try JSONBoardStore.decodeBoard(from: data)
+        let item = try XCTUnwrap(columns.first?.items.first)
+        let checklist = try XCTUnwrap(item.checklists.first)
+
+        XCTAssertEqual(columns.count, 1)
+        XCTAssertEqual(columns.first?.title, "Doing")
+        XCTAssertEqual(item.title, "Import from Trello")
+        XCTAssertEqual(item.notes.map(\.text), ["Bring in existing board", "Comment note"])
+        XCTAssertEqual(item.labels, ["import"])
+        XCTAssertEqual(TodoDateFormatter.dateFormatter.string(from: try XCTUnwrap(item.dueDate)), "2026-04-20")
+        XCTAssertEqual(checklist.title, "Steps")
+        XCTAssertEqual(checklist.items.map(\.text), ["Map lists", "Map cards"])
+        XCTAssertEqual(checklist.items.map(\.isDone), [false, true])
+    }
+
     func testTodoListEntryParsesPriorityDueDateAndCompletionDate() throws {
         let entry = TodoListEntry(line: "2026-04-13 (A) Test ranking due:2026-04-16", isCompleted: true)
 
@@ -207,6 +396,12 @@ final class KanoliTests: XCTestCase {
         FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("md")
+    }
+
+    private func temporaryJSONURL() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("json")
     }
 
     private func temporaryTodoListURL() -> URL {

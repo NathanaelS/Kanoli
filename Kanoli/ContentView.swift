@@ -136,6 +136,11 @@ struct ContentView: View {
                     presentOpenPanel()
                 }
                 .buttonStyle(StartActionButtonStyle(fillColor: AuraPalette.secondary))
+
+                Button("Import Trello Board") {
+                    presentImportJSONPanel()
+                }
+                .buttonStyle(StartActionButtonStyle(fillColor: AuraPalette.primary))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -190,7 +195,7 @@ struct ContentView: View {
                 }
             }
             .background(boardBackground)
-            .navigationTitle(activeBoardFileURL?.lastPathComponent ?? "Kanoli")
+            .navigationTitle("Kanoli")
             .toolbar {
                 ToolbarItem {
                     Button {
@@ -232,9 +237,13 @@ struct ContentView: View {
                 presentOpenPanel()
             }
 
+            Button("Import Trello Board") {
+                presentImportJSONPanel()
+            }
+
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Create a new markdown board or open an existing one.")
+            Text("Create, open, or import a board.")
         }
     }
 
@@ -346,6 +355,41 @@ struct ContentView: View {
             } catch {
                 persistenceErrorMessage = error.localizedDescription
             }
+        }
+#endif
+    }
+
+    private func presentImportJSONPanel() {
+#if os(macOS)
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.json]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.canCreateDirectories = false
+        openPanel.directoryURL = defaultDocumentsDirectoryURL
+
+        guard openPanel.runModal() == .OK, let jsonURL = openPanel.url else {
+            return
+        }
+
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.markdownText]
+        savePanel.canCreateDirectories = true
+        savePanel.directoryURL = jsonURL.deletingLastPathComponent()
+        savePanel.nameFieldStringValue = jsonURL
+            .deletingPathExtension()
+            .appendingPathExtension("md")
+            .lastPathComponent
+
+        guard savePanel.runModal() == .OK, let boardURL = savePanel.url else {
+            return
+        }
+
+        do {
+            persistenceErrorMessage = nil
+            try boardSession.importJSONBoard(from: jsonURL, to: boardURL)
+        } catch {
+            persistenceErrorMessage = error.localizedDescription
         }
 #endif
     }
