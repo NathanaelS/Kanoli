@@ -19,6 +19,9 @@ struct KanoliApp: App {
     @State private var commandRouter = AppCommandRouter()
 
     init() {
+        CrashLogStore.shared.install()
+        CrashLogStore.shared.record("application initialized")
+
 #if os(macOS)
         // Ensure the Dock icon uses the bundled AppIcon asset even when the
         // system icon cache lags behind recent asset updates.

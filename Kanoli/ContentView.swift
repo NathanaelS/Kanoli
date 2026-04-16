@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var isShowingBoardFileChooser = false
     @State private var isFilteredResultsSelected = false
     @State private var isArchiveColumnVisible = false
+    @State private var crashLogNotice: CrashLogNotice?
     @FocusState private var focusedField: FocusTarget?
 
     private var columns: [BoardColumn] {
@@ -54,6 +55,35 @@ struct ContentView: View {
     }
 
     var body: some View {
+        rootContent
+            .onAppear(perform: handleContentAppear)
+            .onChange(of: commandRouter.pendingCommand) { _, _ in
+                handlePendingFileCommand()
+            }
+            .onChange(of: boardFilter) { _, newValue in
+                isFilteredResultsSelected = newValue.isActive
+            }
+            .onChange(of: focusedField) { _, newValue in
+                handleFocusedFieldChange(newValue)
+            }
+            .popover(isPresented: itemEditorBinding, arrowEdge: .trailing) {
+                itemEditorPopover
+            }
+            .alert("Previous Crash Detected", isPresented: crashLogAlertBinding) {
+                Button("Show Logs") {
+                    CrashLogStore.shared.revealLogsInFinder()
+                }
+
+                Button("OK", role: .cancel) {
+                    crashLogNotice = nil
+                }
+            } message: {
+                Text(crashLogNotice?.message ?? "")
+            }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
         Group {
             if activeBoardFileURL == nil {
                 startupView
@@ -76,38 +106,21 @@ struct ContentView: View {
                 )
             }
         }
-        .onAppear {
-            restoreLastOpenedBoardIfNeeded()
-            handlePendingFileCommand()
-        }
-        .onChange(of: commandRouter.pendingCommand) { _, _ in
-            handlePendingFileCommand()
-        }
-        .onChange(of: boardFilter) { _, newValue in
-            isFilteredResultsSelected = newValue.isActive
-        }
-        .onChange(of: focusedField) { _, newValue in
-            // Column titles are editable only while the rename/add flow is
-            // active; focus leaving that field ends the rename mode.
-            if case .column(let columnID) = newValue, columnID == renamingColumnID {
-                return
-            }
+    }
 
-            renamingColumnID = nil
-        }
-        .popover(isPresented: itemEditorBinding, arrowEdge: .trailing) {
-            if let item = editingItem {
-                ItemEditorView(
-                    item: item,
-                    columns: columns,
-                    boardFileURL: activeBoardFileURL,
-                    onTodoPanelWillOpen: { itemIDToReopenAfterTodoPanel = item.id },
-                    onTodoPanelDidClose: reopenItemEditorAfterTodoPanelIfNeeded,
-                    onOpenItem: { itemID in editingItemID = itemID },
-                    onUpdate: { item in boardSession.replaceItem(item) }
-                )
-                .id(item.id)
-            }
+    @ViewBuilder
+    private var itemEditorPopover: some View {
+        if let item = editingItem {
+            ItemEditorView(
+                item: item,
+                columns: columns,
+                boardFileURL: activeBoardFileURL,
+                onTodoPanelWillOpen: { itemIDToReopenAfterTodoPanel = item.id },
+                onTodoPanelDidClose: reopenItemEditorAfterTodoPanelIfNeeded,
+                onOpenItem: { itemID in editingItemID = itemID },
+                onUpdate: { item in boardSession.replaceItem(item) }
+            )
+            .id(item.id)
         }
     }
 
@@ -316,6 +329,39 @@ struct ContentView: View {
         )
     }
 
+    private var crashLogAlertBinding: Binding<Bool> {
+        Binding(
+            get: { crashLogNotice != nil },
+            set: { shouldShow in
+                if !shouldShow {
+                    crashLogNotice = nil
+                }
+            }
+        )
+    }
+
+    private func handleContentAppear() {
+        CrashLogStore.shared.record("content view appeared")
+        crashLogNotice = crashLogNotice ?? CrashLogStore.shared.pendingLaunchNotice()
+        restoreLastOpenedBoardIfNeeded()
+        handlePendingFileCommand()
+    }
+
+    private func handleFocusedFieldChange(_ newValue: FocusTarget?) {
+        CrashLogStore.shared.record(
+            "focus changed",
+            metadata: ["target": focusDescription(newValue)]
+        )
+
+        // Column titles are editable only while the rename/add flow is
+        // active; focus leaving that field ends the rename mode.
+        if case .column(let columnID) = newValue, columnID == renamingColumnID {
+            return
+        }
+
+        renamingColumnID = nil
+    }
+
     // File commands can come either from the in-window buttons or from the app
     // menu when the main window is closed. Both flows route into BoardSessionStore.
     private func presentOpenPanel() {
@@ -464,6 +510,7 @@ struct ContentView: View {
     // in the view while the board structure itself is mutated by BoardSessionStore.
     private func addColumn() {
         let newColumnID = boardSession.addColumn()
+        CrashLogStore.shared.record("column added", metadata: ["columnID": newColumnID.uuidString])
         renamingColumnID = newColumnID
 
         DispatchQueue.main.async {
@@ -476,12 +523,21 @@ struct ContentView: View {
             return
         }
 
+        CrashLogStore.shared.record(
+            "card added",
+            metadata: [
+                "columnID": columnID.uuidString,
+                "itemID": newItemID.uuidString
+            ]
+        )
+
         DispatchQueue.main.async {
             focusedField = .item(newItemID)
         }
     }
 
     private func renameColumn(_ columnID: BoardColumn.ID) {
+        CrashLogStore.shared.record("column rename started", metadata: ["columnID": columnID.uuidString])
         renamingColumnID = columnID
 
         DispatchQueue.main.async {
@@ -490,6 +546,7 @@ struct ContentView: View {
     }
 
     private func deleteColumn(_ columnID: BoardColumn.ID) {
+        CrashLogStore.shared.record("column deleted", metadata: ["columnID": columnID.uuidString])
         boardSession.deleteColumn(columnID)
 
         if focusedField == .column(columnID) {
@@ -502,6 +559,13 @@ struct ContentView: View {
     }
 
     private func submitColumnTitle(columnID: BoardColumn.ID, title: String) {
+        CrashLogStore.shared.record(
+            "column title submitted",
+            metadata: [
+                "columnID": columnID.uuidString,
+                "isBlank": String(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            ]
+        )
         renamingColumnID = nil
 
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -512,11 +576,31 @@ struct ContentView: View {
         addItem(to: columnID)
     }
 
+    private func removeBlankFocusedColumn(columnID: BoardColumn.ID, title: String) {
+        CrashLogStore.shared.record(
+            "escape pressed in column title",
+            metadata: [
+                "columnID": columnID.uuidString,
+                "isBlank": String(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            ]
+        )
+
+        guard focusedField == .column(columnID),
+              title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        deleteColumn(columnID)
+    }
+
     @ViewBuilder
     private func columnView(for index: Int) -> some View {
-        let columnID = columns[index].id
+        let column = columns[index]
+        let columnID = column.id
         let titleBinding = Binding(
-            get: { columns[index].title },
+            get: {
+                columns.first(where: { $0.id == columnID })?.title ?? ""
+            },
             set: { newValue in
                 boardSession.updateColumnTitle(columnID, title: sanitizedSingleLineText(newValue, limit: 25))
             }
@@ -535,8 +619,11 @@ struct ContentView: View {
                         .onSubmit {
                             submitColumnTitle(columnID: columnID, title: titleBinding.wrappedValue)
                         }
+                        .onExitCommand {
+                            removeBlankFocusedColumn(columnID: columnID, title: titleBinding.wrappedValue)
+                        }
                 } else {
-                    Text(columns[index].title.isEmpty ? "New column" : columns[index].title)
+                    Text(column.title.isEmpty ? "New column" : column.title)
                         .font(.headline)
                         .foregroundStyle(AuraPalette.foreground)
                         .lineLimit(1)
@@ -639,6 +726,9 @@ struct ContentView: View {
                         .onSubmit {
                             submitItemTitle(itemID: itemID, columnID: sourceColumnID, title: titleBinding.wrappedValue)
                         }
+                        .onExitCommand {
+                            removeBlankFocusedItem(itemID: itemID, title: titleBinding.wrappedValue)
+                        }
                 } else {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(item.displayTitle)
@@ -696,6 +786,15 @@ struct ContentView: View {
     }
 
     private func submitItemTitle(itemID: BoardItem.ID, columnID: BoardColumn.ID, title: String) {
+        CrashLogStore.shared.record(
+            "card title submitted",
+            metadata: [
+                "columnID": columnID.uuidString,
+                "itemID": itemID.uuidString,
+                "isBlank": String(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            ]
+        )
+
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             focusedField = nil
             return
@@ -706,6 +805,24 @@ struct ContentView: View {
         }
 
         addItem(to: columnID)
+    }
+
+    private func removeBlankFocusedItem(itemID: BoardItem.ID, title: String) {
+        CrashLogStore.shared.record(
+            "escape pressed in card title",
+            metadata: [
+                "itemID": itemID.uuidString,
+                "isBlank": String(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            ]
+        )
+
+        guard focusedField == .item(itemID),
+              title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        focusedField = nil
+        boardSession.removeItem(itemID)
     }
 
     private var emptyFilteredResultsView: some View {
@@ -910,6 +1027,17 @@ struct ContentView: View {
         }
 
         return singleLineValue
+    }
+
+    private func focusDescription(_ focusTarget: FocusTarget?) -> String {
+        switch focusTarget {
+        case .column(let columnID):
+            return "column:\(columnID.uuidString)"
+        case .item(let itemID):
+            return "item:\(itemID.uuidString)"
+        case nil:
+            return "none"
+        }
     }
 
     private var defaultDocumentsDirectoryURL: URL {
