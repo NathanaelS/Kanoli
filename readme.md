@@ -1,42 +1,76 @@
-# Kanoli
+# Kanoli [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS-lightgrey)](#building-kanoli) [![Storage](https://img.shields.io/badge/storage-Markdown%20%2B%20todo.txt-2ea44f)](#kanoli) [![UI](https://img.shields.io/badge/UI-SwiftUI-0A84FF)](#kanoli)
 
-### A Trello inspired, markdown powered, locally stored, Kanban system
+Kanoli is a local-first, Trello-inspired Kanban app that stores your board data in plain Markdown.
+It is designed for offline use, human-readable files, and portable workflows.
 
-Kanoli is 100% vibe coded in XCode using Codex, so I make no guarantees that the code is the cleanest/simplest/best it can be. The purpose of this app is to allow for a Kanban style GUI totally offline and where the data is readable outside of the app. The idea behind the markdown file is readability if the app were to fail. Or an easy way to see the data in another way. Maybe feed it into another LLM. The world is your oyster.
+## Quick Start
 
-This system pulls inspiration from the following:
+To get started with Kanoli:
 
-- Michael Descy and his Plaintext Productivity system found here, https://plaintext-productivity.net/
-- The todo.txt methodology, found here, https://github.com/todotxt/todo.txt
-- The community building the Sleek app for todo management, found here, https://github.com/ransome1/sleek
+1. Download the latest alpha `.dmg` from the GitHub Releases page and install Kanoli.
+2. Open Kanoli and click **Create File** to start a new Markdown board.
+3. Click **Open File** to load an existing board.
+4. Click **Import Trello Board** to convert Trello JSON into a Kanoli Markdown board.
 
-UI color theming is based entirely on the Aura theme created by Dalton Menezes, found here, https://github.com/daltonmenezes/aura-theme
+You do not need to assemble/build Kanoli in Xcode to use the alpha release.
 
+If macOS blocks launch, go to **System Settings > Privacy & Security** and allow Kanoli to open.
 
-**Creating a new file**
+## Bug Tracker
 
-- Open Kanoli
-- Click Create File
-- The app defaults to your documents folder, but you can choose anywhere
-- This creates a markdown file
-- From here the app should behave like a typical Kanban board
+Have a bug or feature request?
+Open an issue in this repository and include:
 
+- What you expected
+- What happened
+- Steps to reproduce
+- Any sample board file (if safe to share)
 
-**Roadmap**
+Issue tracker: [GitHub Issues](https://github.com/NathanaelS/Kanoli/issues)
 
-- Adding some sort of file support
-- Adding some sort of image support
-- The current working plan for cross platform support is utilizing Syncthing. It's a free utility that will just sync local folders on multiple devices. No storing in the cloud, no hitting a 3rd party server. Your data on your machines.
+## Building Kanoli
 
-**Todo Lists**
+To run Kanoli locally:
 
-Todo.txt functionality is built into the system.
+1. Open `Kanoli.xcodeproj` in Xcode.
+2. Select the `Kanoli` scheme.
+3. Choose a macOS target and run.
 
-**License**
+The project is built with SwiftUI and Xcode project defaults.
+Building in Xcode is optional if you are using the prebuilt alpha `.dmg` from Releases.
+
+## Documentation
+
+For project details and current implementation status:
+
+- [Current State](Kanoli/Current-State.md)
+
+## Roadmap
+
+Kanoli is focused on:
+
+- Better Markdown readability and safer file operations
+- Card-level file attachments and image support
+- Improved drag/drop UX and board navigation
+- Faster filtering, search, and workflow shortcuts
+
+See [Current State](Kanoli/Current-State.md) for the detailed phased roadmap.
+
+## Inspiration
+
+Kanoli takes inspiration from:
+
+- [Plaintext Productivity][plaintext-productivity]
+- [todo.txt][todotxt]
+- [Sleek task management][sleek]
+- [Aura theme][aura-theme]
+
+## License
 
 Kanoli is licensed under the MIT License.
 See [LICENSE](LICENSE) for details.
 
-**Issues and Security Reporting**
-
-Please open issues here: https://github.com/NathanaelS/Kanoli/issues
+[plaintext-productivity]: https://plaintext-productivity.net/
+[todotxt]: https://github.com/todotxt/todo.txt
+[sleek]: https://github.com/ransome1/sleek
+[aura-theme]: https://github.com/daltonmenezes/aura-theme
