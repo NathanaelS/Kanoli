@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/config/app_environment.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/board/board_entities.dart';
 import '../application/board_session_controller.dart';
 import 'item_editor_sheet.dart';
@@ -26,6 +28,10 @@ class BoardWorkspacePage extends StatefulWidget {
 }
 
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
+  static const MethodChannel _nativeDialogs = MethodChannel(
+    'kanoli/native_dialogs',
+  );
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -89,12 +95,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               const SizedBox(width: 8),
             ],
           ),
-          body: widget.controller.hasActiveBoard
-              ? _boardView(context)
-              : _startupView(context),
+          body: DecoratedBox(
+            decoration: const BoxDecoration(gradient: AppTheme.workspaceGradient),
+            child: widget.controller.hasActiveBoard
+                ? _boardView(context)
+                : _startupView(context),
+          ),
         );
 
-        if (!Platform.isMacOS) {
+        if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
           return scaffold;
         }
 
@@ -105,24 +114,44 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               menus: <PlatformMenuItem>[
                 PlatformMenuItemGroup(
                   members: <PlatformMenuItem>[
-                    const PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.about,
-                    ),
-                    const PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.servicesSubmenu,
-                    ),
-                    const PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.hide,
-                    ),
-                    const PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.hideOtherApplications,
-                    ),
-                    const PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.showAllApplications,
-                    ),
-                    const PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.quit,
-                    ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.about,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.about,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.servicesSubmenu,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.servicesSubmenu,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.hide,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.hide,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.hideOtherApplications,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type:
+                            PlatformProvidedMenuItemType.hideOtherApplications,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.showAllApplications,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type:
+                            PlatformProvidedMenuItemType.showAllApplications,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.quit,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.quit,
+                      ),
                   ],
                 ),
               ],
@@ -243,42 +272,69 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'No board open',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text('Environment: ${widget.environment.name}'),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: <Widget>[
-                    FilledButton.icon(
-                      onPressed: _createBoard,
-                      icon: const Icon(Icons.note_add_outlined),
-                      label: const Text('Create File'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: _openBoard,
-                      icon: const Icon(Icons.folder_open),
-                      label: const Text('Open File'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: _importBoard,
-                      icon: const Icon(Icons.download),
-                      label: const Text('Import Trello Board'),
-                    ),
-                  ],
-                ),
-              ],
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppTheme.startupPanelGradient,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.outline),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x6615141B),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Card(
+            color: Colors.transparent,
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'No board open',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: <Widget>[
+                      FilledButton.icon(
+                        onPressed: _createBoard,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: AppTheme.background,
+                        ),
+                        icon: const Icon(Icons.note_add_outlined),
+                        label: const Text('Create File'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _openBoard,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.secondary,
+                          foregroundColor: AppTheme.background,
+                        ),
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('Open File'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _importBoard,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.quinary,
+                          foregroundColor: AppTheme.background,
+                        ),
+                        icon: const Icon(Icons.download),
+                        label: const Text('Import Trello Board'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -447,9 +503,9 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }) {
     final tile = Container(
       decoration: BoxDecoration(
-        color: const Color(0x1AFFFFFF),
+        color: AppTheme.surfaceElevated,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0x33FFFFFF)),
+        border: Border.all(color: AppTheme.outline),
       ),
       child: ListTile(
         dense: true,
@@ -675,141 +731,85 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _openBoard() async {
-    if (_isDesktop) {
-      final selectedPath = await _promptPathInput(
-        title: 'Open Board',
-        hintText: '/path/to/board.md',
-        submitLabel: 'Open',
-      );
-      if (selectedPath == null || selectedPath.trim().isEmpty) {
+    if (Platform.isMacOS) {
+      final nativePath = await _nativeOpenBoardPath();
+      if (nativePath != null && nativePath.isNotEmpty) {
+        await widget.controller.openBoard(nativePath);
         return;
       }
-      await widget.controller.openBoard(selectedPath);
-      return;
     }
 
     try {
       final file = await openFile(
         acceptedTypeGroups: const <XTypeGroup>[
-          XTypeGroup(label: 'Board Files', extensions: <String>['md', 'txt']),
+          XTypeGroup(
+            label: 'Board Files',
+            extensions: <String>['md', 'txt'],
+          ),
         ],
       );
 
-      final selectedPath =
-          file?.path ??
-          await _promptPathInput(
-            title: 'Open Board',
-            hintText: '/path/to/board.md',
-            submitLabel: 'Open',
-          );
-
-      if (selectedPath == null || selectedPath.trim().isEmpty) {
+      if (file == null) {
         return;
       }
 
-      await widget.controller.openBoard(selectedPath);
+      await widget.controller.openBoard(file.path);
     } on MissingPluginException {
-      final selectedPath = await _promptPathInput(
-        title: 'Open Board',
-        hintText: '/path/to/board.md',
-        submitLabel: 'Open',
-      );
-      if (selectedPath == null || selectedPath.trim().isEmpty) {
-        return;
-      }
-      await widget.controller.openBoard(selectedPath);
+      await _openBoardViaPathPrompt();
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'openBoardUiFailure',
         error: error,
         stackTrace: stackTrace,
       );
-      _showSnackBar('Open failed: $error');
+      await _openBoardViaPathPrompt();
     }
   }
 
   Future<void> _createBoard() async {
-    if (_isDesktop) {
-      final defaultPath = await _desktopDefaultPath('KanoliBoard.md');
-      final createPath = await _promptPathInput(
-        title: 'Create Board',
-        initialValue: defaultPath,
-        hintText: '/path/to/KanoliBoard.md',
-        submitLabel: 'Create',
-      );
-      if (createPath == null || createPath.trim().isEmpty) {
+    if (Platform.isMacOS) {
+      final nativePath = await _nativeSaveBoardPath('KanoliBoard.md');
+      if (nativePath != null && nativePath.isNotEmpty) {
+        await widget.controller.createBoard(_normalizeMarkdownPath(nativePath));
         return;
       }
-
-      await widget.controller.createBoard(createPath);
-      return;
     }
 
     try {
       const defaultName = 'KanoliBoard.md';
       final path = await _resolveCreatePath(defaultName);
-      final createPath =
-          path ??
-          await _promptPathInput(
-            title: 'Create Board',
-            initialValue: defaultName,
-            hintText: '/path/to/KanoliBoard.md',
-            submitLabel: 'Create',
-          );
-      if (createPath == null || createPath.trim().isEmpty) {
+      if (path == null) {
         return;
       }
 
-      await widget.controller.createBoard(createPath);
+      await widget.controller.createBoard(path);
     } on MissingPluginException {
-      final createPath = await _promptPathInput(
-        title: 'Create Board',
-        initialValue: 'KanoliBoard.md',
-        hintText: '/path/to/KanoliBoard.md',
-        submitLabel: 'Create',
-      );
-      if (createPath == null || createPath.trim().isEmpty) {
-        return;
-      }
-      await widget.controller.createBoard(createPath);
+      await _createBoardViaPathPrompt('KanoliBoard.md');
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'createBoardUiFailure',
         error: error,
         stackTrace: stackTrace,
       );
-      _showSnackBar('Create failed: $error');
+      await _createBoardViaPathPrompt('KanoliBoard.md');
     }
   }
 
   Future<void> _importBoard() async {
-    if (_isDesktop) {
-      final jsonPath = await _promptPathInput(
-        title: 'Import Trello JSON',
-        hintText: '/path/to/board.json',
-        submitLabel: 'Next',
-      );
-      if (jsonPath == null || jsonPath.trim().isEmpty) {
-        return;
+    if (Platform.isMacOS) {
+      final jsonPath = await _nativeOpenJsonPath();
+      if (jsonPath != null && jsonPath.isNotEmpty) {
+        final suggested =
+            '${_baseNameWithoutExtension(jsonPath.split(Platform.pathSeparator).last)}.md';
+        final boardPath = await _nativeSaveBoardPath(suggested);
+        if (boardPath != null && boardPath.isNotEmpty) {
+          await widget.controller.importJsonBoard(
+            jsonPath: jsonPath,
+            boardPath: _normalizeMarkdownPath(boardPath),
+          );
+          return;
+        }
       }
-
-      final jsonFilename = jsonPath.split(Platform.pathSeparator).last;
-      final suggested = '${_baseNameWithoutExtension(jsonFilename)}.md';
-      final boardPath = await _promptPathInput(
-        title: 'Save Imported Board',
-        initialValue: await _desktopDefaultPath(suggested),
-        hintText: '/path/to/ImportedBoard.md',
-        submitLabel: 'Import',
-      );
-      if (boardPath == null || boardPath.trim().isEmpty) {
-        return;
-      }
-
-      await widget.controller.importJsonBoard(
-        jsonPath: jsonPath,
-        boardPath: boardPath,
-      );
-      return;
     }
 
     try {
@@ -819,67 +819,29 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         ],
       );
 
-      final jsonPath =
-          jsonFile?.path ??
-          await _promptPathInput(
-            title: 'Import Trello JSON',
-            hintText: '/path/to/board.json',
-            submitLabel: 'Next',
-          );
-      if (jsonPath == null || jsonPath.trim().isEmpty) {
+      if (jsonFile == null) {
         return;
       }
 
-      final suggested = jsonFile == null
-          ? 'ImportedBoard.md'
-          : '${_baseNameWithoutExtension(jsonFile.name)}.md';
-      final boardPath =
-          await _resolveCreatePath(suggested) ??
-          await _promptPathInput(
-            title: 'Save Imported Board',
-            initialValue: suggested,
-            hintText: '/path/to/ImportedBoard.md',
-            submitLabel: 'Import',
-          );
-      if (boardPath == null || boardPath.trim().isEmpty) {
+      final suggested = '${_baseNameWithoutExtension(jsonFile.name)}.md';
+      final boardPath = await _resolveCreatePath(suggested);
+      if (boardPath == null) {
         return;
       }
 
       await widget.controller.importJsonBoard(
-        jsonPath: jsonPath,
+        jsonPath: jsonFile.path,
         boardPath: boardPath,
       );
     } on MissingPluginException {
-      final jsonPath = await _promptPathInput(
-        title: 'Import Trello JSON',
-        hintText: '/path/to/board.json',
-        submitLabel: 'Next',
-      );
-      if (jsonPath == null || jsonPath.trim().isEmpty) {
-        return;
-      }
-
-      final boardPath = await _promptPathInput(
-        title: 'Save Imported Board',
-        initialValue: 'ImportedBoard.md',
-        hintText: '/path/to/ImportedBoard.md',
-        submitLabel: 'Import',
-      );
-      if (boardPath == null || boardPath.trim().isEmpty) {
-        return;
-      }
-
-      await widget.controller.importJsonBoard(
-        jsonPath: jsonPath,
-        boardPath: boardPath,
-      );
+      await _importBoardViaPathPrompt();
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'importBoardUiFailure',
         error: error,
         stackTrace: stackTrace,
       );
-      _showSnackBar('Import failed: $error');
+      await _importBoardViaPathPrompt();
     }
   }
 
@@ -1056,7 +1018,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(SnackBar(content: Text(message)));
-      widget.controller.clearError();
+      widget.controller.consumeError();
     });
   }
 
@@ -1143,32 +1105,91 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     return null;
   }
 
-  Future<String?> _promptPathInput({
-    required String title,
-    required String hintText,
-    required String submitLabel,
-    String initialValue = '',
-  }) async {
-    final value = await _promptText(
-      context,
-      title: title,
-      initialValue: initialValue,
-      hintText: hintText,
-      submitLabel: submitLabel,
-    );
-    if (value == null) {
+  Future<String?> _nativeOpenBoardPath() async {
+    try {
+      return await _nativeDialogs.invokeMethod<String>('openBoard');
+    } on Object {
       return null;
     }
-    return value.trim();
   }
 
-  void _showSnackBar(String message) {
+  Future<String?> _nativeOpenJsonPath() async {
+    try {
+      return await _nativeDialogs.invokeMethod<String>('openJson');
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<String?> _nativeSaveBoardPath(String suggestedName) async {
+    try {
+      return await _nativeDialogs.invokeMethod<String>('saveBoard', <String, Object?>{
+        'suggestedName': suggestedName,
+      });
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _openBoardViaPathPrompt() async {
+    final selectedPath = await _promptText(
+      context,
+      title: 'Open Board',
+      initialValue: '',
+      hintText: '/path/to/board.md',
+      submitLabel: 'Open',
+    );
+    if (selectedPath == null || selectedPath.trim().isEmpty) {
+      return;
+    }
+    await widget.controller.openBoard(selectedPath.trim());
+  }
+
+  Future<void> _createBoardViaPathPrompt(String suggestedName) async {
+    final createPath = await _promptText(
+      context,
+      title: 'Create Board',
+      initialValue: suggestedName,
+      hintText: '/path/to/$suggestedName',
+      submitLabel: 'Create',
+    );
+    if (createPath == null || createPath.trim().isEmpty) {
+      return;
+    }
+    await widget.controller.createBoard(createPath.trim());
+  }
+
+  Future<void> _importBoardViaPathPrompt() async {
+    final jsonPath = await _promptText(
+      context,
+      title: 'Import Trello JSON',
+      initialValue: '',
+      hintText: '/path/to/board.json',
+      submitLabel: 'Next',
+    );
+    if (jsonPath == null || jsonPath.trim().isEmpty) {
+      return;
+    }
+
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+
+    final boardPath = await _promptText(
+      context,
+      title: 'Save Imported Board',
+      initialValue: 'ImportedBoard.md',
+      hintText: '/path/to/ImportedBoard.md',
+      submitLabel: 'Import',
+    );
+    if (boardPath == null || boardPath.trim().isEmpty) {
+      return;
+    }
+
+    await widget.controller.importJsonBoard(
+      jsonPath: jsonPath.trim(),
+      boardPath: boardPath.trim(),
+    );
   }
 
   String _normalizeMarkdownPath(String path) {
@@ -1177,13 +1198,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     return '$path.md';
-  }
-
-  bool get _isDesktop => Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-
-  Future<String> _desktopDefaultPath(String filename) async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}${Platform.pathSeparator}$filename';
   }
 }
 

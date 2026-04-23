@@ -661,6 +661,10 @@ class BoardSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void consumeError() {
+    _clearError();
+  }
+
   void _appendItemToBoard({
     required BoardItem item,
     required String boardPath,

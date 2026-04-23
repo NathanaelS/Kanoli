@@ -29,6 +29,12 @@ class _KanoliAppState extends State<KanoliApp> {
   }
 
   @override
+  void dispose() {
+    _sessionController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Kanoli',

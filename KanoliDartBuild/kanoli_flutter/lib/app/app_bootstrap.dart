@@ -9,60 +9,64 @@ import '../core/logging/app_logger.dart';
 import 'app.dart';
 
 Future<void> bootstrap() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  AppLogger? logger;
 
-  final environment = AppEnvironment.fromDartDefine();
-  final logger = AppLogger(environment: environment);
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  logger.info('bootstrap', {'environment': environment.name});
+    final environment = AppEnvironment.fromDartDefine();
+    logger = AppLogger(environment: environment);
 
-  FlutterError.onError = (FlutterErrorDetails details) {
-    ErrorReporter.reportFlutterError(details, logger);
-  };
+    logger!.info('bootstrap', {'environment': environment.name});
 
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    logger.error(
-      'errorWidget',
-      error: details.exception,
-      stackTrace: details.stack,
-    );
+    FlutterError.onError = (FlutterErrorDetails details) {
+      ErrorReporter.reportFlutterError(details, logger!);
+    };
 
-    return ColoredBox(
-      color: const Color(0xFF15141B),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Unexpected UI error:\n${details.exceptionAsString()}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFBDBDBD)),
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      logger!.error(
+        'errorWidget',
+        error: details.exception,
+        stackTrace: details.stack,
+      );
+
+      return ColoredBox(
+        color: const Color(0xFF15141B),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Unexpected UI error:\n${details.exceptionAsString()}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFFBDBDBD)),
+            ),
           ),
         ),
-      ),
-    );
-  };
+      );
+    };
 
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    ErrorReporter.reportError(
-      error,
-      stack,
-      logger,
-      source: 'platformDispatcher',
-    );
-    return true;
-  };
-
-  await runZonedGuarded(
-    () async {
-      runApp(KanoliApp(environment: environment, logger: logger));
-    },
-    (Object error, StackTrace stack) {
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
       ErrorReporter.reportError(
         error,
         stack,
-        logger,
-        source: 'runZonedGuarded',
+        logger!,
+        source: 'platformDispatcher',
       );
-    },
-  );
+      return true;
+    };
+
+    runApp(KanoliApp(environment: environment, logger: logger!));
+  }, (Object error, StackTrace stack) {
+    final localLogger = logger;
+    if (localLogger == null) {
+      debugPrint('bootstrap failure before logger init: $error');
+      return;
+    }
+    ErrorReporter.reportError(
+      error,
+      stack,
+      localLogger,
+      source: 'runZonedGuarded',
+    );
+  });
 }

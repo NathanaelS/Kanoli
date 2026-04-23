@@ -14,7 +14,6 @@ void main() {
 
     expect(find.text('Kanoli (Flutter Port)'), findsOneWidget);
     expect(find.textContaining('No board open'), findsOneWidget);
-    expect(find.textContaining('Environment: dev'), findsOneWidget);
     expect(find.text('Create File'), findsOneWidget);
     expect(find.text('Open File'), findsOneWidget);
   });
