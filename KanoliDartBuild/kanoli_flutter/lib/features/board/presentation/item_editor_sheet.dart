@@ -31,6 +31,7 @@ class ItemEditorSheet extends StatefulWidget {
 
 class _ItemEditorSheetState extends State<ItemEditorSheet> {
   final TodoBoardStore _todoStore = TodoBoardStore();
+  static const Set<String> _supportedPriorities = <String>{'A', 'B', 'C', 'D'};
 
   late BoardItem _draft;
   late List<BoardNote> _notes;
@@ -43,6 +44,14 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   List<String> _otherTodoLines = <String>[];
   final TextEditingController _todoAddController = TextEditingController();
   final TextEditingController _labelsController = TextEditingController();
+
+  String get _priorityFormValue {
+    final raw = _draft.priority?.trim().toUpperCase() ?? '';
+    if (_supportedPriorities.contains(raw)) {
+      return raw;
+    }
+    return '';
+  }
 
   @override
   void initState() {
@@ -172,7 +181,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         SizedBox(
           width: 200,
           child: DropdownButtonFormField<String>(
-            initialValue: _draft.priority ?? '',
+            initialValue: _priorityFormValue,
             decoration: const InputDecoration(labelText: 'Priority'),
             items: const <DropdownMenuItem<String>>[
               DropdownMenuItem<String>(value: '', child: Text('None')),

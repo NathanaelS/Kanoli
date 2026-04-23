@@ -110,6 +110,53 @@ void main() {
       expect(item.title, 'Card Title');
       expect(item.labels, <String>['AI']);
     });
+
+    test('parses Swift-exported mixed board markdown safely', () {
+      final store = MarkdownBoardStore();
+      final filePath = _tempFilePath('.md');
+      File(filePath).writeAsStringSync('''
+# Krysilis Productions
+## LPA +AI id:F8F1785E-7FFC-4700-9BDF-C5D076F9571A
+> note:2026-04-11T21:44:49-07:00 nathanaels.github.io/LPA/
+## Thing 2 +AI +Test +Test-2 id:4B5E1F0B-4EDE-4E86-8DBB-CBBDB336A61E
+## Thing 3 id:5F5BA7B5-8D15-4983-B8E7-6F5FE557C1ED
+##  id:252AC7EE-E608-41FD-A874-A38961E44B56
+
+# Second column
+## Second column item 1 id:7BBE9297-5243-4995-BF21-C66475E2DF73
+## Thing 47 +Bug-Report due:2026-04-13 id:1DE4336D-075E-4870-8CC5-168635CEEF16
+> note:2026-04-11T20:40:06-07:00 khkn/lkn
+> note:2026-04-12T09:38:09-07:00 This is a new note
+> checklist:20323199-5C5C-4DD5-A1BF-CAF95390327C Checklist
+> checklist-item:20323199-5C5C-4DD5-A1BF-CAF95390327C:[ ] Check 1
+> checklist-item:20323199-5C5C-4DD5-A1BF-CAF95390327C:[ ] Check 2
+> checklist-item:20323199-5C5C-4DD5-A1BF-CAF95390327C:[ ] Thing 3
+> checklist-item:20323199-5C5C-4DD5-A1BF-CAF95390327C:[ ] Thing 4
+
+# Archive
+## LPA id:F7CF22F3-D51F-47E5-B576-609E97DD8B97
+> note:2026-04-11T21:44:49-07:00 nathanaels.github.io/LPA/
+
+# Woohoo
+## Item 1 id:7BB9F925-599F-4FAA-A7F2-ABFA62761F8A
+''');
+
+      final result = store.loadBoard(filePath);
+      final secondColumn = result.columns.firstWhere(
+        (BoardColumn column) => column.title == 'Second column',
+      );
+      final item = secondColumn.items.firstWhere(
+        (BoardItem boardItem) => boardItem.id == '1DE4336D-075E-4870-8CC5-168635CEEF16',
+      );
+
+      expect(result.errorMessage, isNull);
+      expect(result.columns.length, 4);
+      expect(item.title, 'Thing 47');
+      expect(item.labels, <String>['Bug-Report']);
+      expect(TodoDateFormatter.format(item.dueDate!), '2026-04-13');
+      expect(item.notes.length, 2);
+      expect(item.checklists.single.items.length, 4);
+    });
   });
 }
 

@@ -5,7 +5,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../../core/config/app_environment.dart';
 import '../../../core/theme/app_theme.dart';
@@ -28,13 +27,9 @@ class BoardWorkspacePage extends StatefulWidget {
 }
 
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
-  static const MethodChannel _nativeDialogs = MethodChannel(
-    'kanoli/native_dialogs',
-  );
-
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    final body = ListenableBuilder(
       listenable: widget.controller,
       builder: (BuildContext context, Widget? child) {
         _showErrorIfNeeded(context);
@@ -97,174 +92,194 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           ),
           body: DecoratedBox(
             decoration: const BoxDecoration(gradient: AppTheme.workspaceGradient),
-            child: widget.controller.hasActiveBoard
-                ? _boardView(context)
-                : _startupView(context),
+            child: Stack(
+              children: <Widget>[
+                const Positioned(
+                  left: -140,
+                  top: -120,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: <Color>[
+                            AppTheme.boardAuraPrimaryGlow,
+                            Color(0x008464C6),
+                          ],
+                          radius: 0.9,
+                        ),
+                      ),
+                      child: SizedBox(width: 360, height: 360),
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  right: -110,
+                  bottom: -90,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: <Color>[
+                            AppTheme.boardAuraSecondaryGlow,
+                            Color(0x0054C59F),
+                          ],
+                          radius: 0.9,
+                        ),
+                      ),
+                      child: SizedBox(width: 320, height: 320),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: widget.controller.hasActiveBoard
+                      ? _boardView(context)
+                      : _startupView(context),
+                ),
+              ],
+            ),
           ),
         );
 
-        if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
-          return scaffold;
-        }
+        return scaffold;
+      },
+    );
 
-        return PlatformMenuBar(
+    if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
+      return body;
+    }
+
+    return PlatformMenuBar(
+      menus: <PlatformMenuItem>[
+        PlatformMenu(
+          label: 'Kanoli',
           menus: <PlatformMenuItem>[
-            PlatformMenu(
-              label: 'Kanoli',
-              menus: <PlatformMenuItem>[
-                PlatformMenuItemGroup(
-                  members: <PlatformMenuItem>[
-                    if (PlatformProvidedMenuItem.hasMenu(
-                      PlatformProvidedMenuItemType.about,
-                    ))
-                      const PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.about,
-                      ),
-                    if (PlatformProvidedMenuItem.hasMenu(
-                      PlatformProvidedMenuItemType.servicesSubmenu,
-                    ))
-                      const PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.servicesSubmenu,
-                      ),
-                    if (PlatformProvidedMenuItem.hasMenu(
-                      PlatformProvidedMenuItemType.hide,
-                    ))
-                      const PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.hide,
-                      ),
-                    if (PlatformProvidedMenuItem.hasMenu(
-                      PlatformProvidedMenuItemType.hideOtherApplications,
-                    ))
-                      const PlatformProvidedMenuItem(
-                        type:
-                            PlatformProvidedMenuItemType.hideOtherApplications,
-                      ),
-                    if (PlatformProvidedMenuItem.hasMenu(
-                      PlatformProvidedMenuItemType.showAllApplications,
-                    ))
-                      const PlatformProvidedMenuItem(
-                        type:
-                            PlatformProvidedMenuItemType.showAllApplications,
-                      ),
-                    if (PlatformProvidedMenuItem.hasMenu(
-                      PlatformProvidedMenuItemType.quit,
-                    ))
-                      const PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.quit,
-                      ),
-                  ],
-                ),
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                if (PlatformProvidedMenuItem.hasMenu(
+                  PlatformProvidedMenuItemType.about,
+                ))
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.about,
+                  ),
+                if (PlatformProvidedMenuItem.hasMenu(
+                  PlatformProvidedMenuItemType.servicesSubmenu,
+                ))
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.servicesSubmenu,
+                  ),
+                if (PlatformProvidedMenuItem.hasMenu(
+                  PlatformProvidedMenuItemType.hide,
+                ))
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.hide,
+                  ),
+                if (PlatformProvidedMenuItem.hasMenu(
+                  PlatformProvidedMenuItemType.hideOtherApplications,
+                ))
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.hideOtherApplications,
+                  ),
+                if (PlatformProvidedMenuItem.hasMenu(
+                  PlatformProvidedMenuItemType.showAllApplications,
+                ))
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.showAllApplications,
+                  ),
+                if (PlatformProvidedMenuItem.hasMenu(
+                  PlatformProvidedMenuItemType.quit,
+                ))
+                  const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.quit),
               ],
             ),
-            PlatformMenu(
-              label: 'File',
-              menus: <PlatformMenuItem>[
-                PlatformMenuItemGroup(
-                  members: <PlatformMenuItem>[
-                    PlatformMenuItem(
-                      label: 'Create Board',
-                      onSelected: () => unawaited(_createBoard()),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Open Board',
-                      onSelected: () => unawaited(_openBoard()),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Import Trello JSON',
-                      onSelected: () => unawaited(_importBoard()),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Close Active Board',
-                      onSelected: widget.controller.hasActiveBoard
-                          ? () => unawaited(_closeSelectedTab())
-                          : null,
-                    ),
-                  ],
+          ],
+        ),
+        PlatformMenu(
+          label: 'File',
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: 'Create Board',
+                  onSelected: () => unawaited(_createBoard()),
                 ),
-              ],
-            ),
-            PlatformMenu(
-              label: 'Edit',
-              menus: <PlatformMenuItem>[
-                PlatformMenuItemGroup(
-                  members: <PlatformMenuItem>[
-                    PlatformMenuItem(
-                      label: 'Undo',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyZ,
-                        meta: true,
-                      ),
-                      onSelected: () => Actions.invoke(
-                        context,
-                        const UndoTextIntent(SelectionChangedCause.keyboard),
-                      ),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Redo',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyZ,
-                        shift: true,
-                        meta: true,
-                      ),
-                      onSelected: () => Actions.invoke(
-                        context,
-                        const RedoTextIntent(SelectionChangedCause.keyboard),
-                      ),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Cut',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyX,
-                        meta: true,
-                      ),
-                      onSelected: () => Actions.invoke(
-                        context,
-                        const CopySelectionTextIntent.cut(
-                          SelectionChangedCause.keyboard,
-                        ),
-                      ),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Copy',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyC,
-                        meta: true,
-                      ),
-                      onSelected: () => Actions.invoke(
-                        context,
-                        CopySelectionTextIntent.copy,
-                      ),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Paste',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyV,
-                        meta: true,
-                      ),
-                      onSelected: () => Actions.invoke(
-                        context,
-                        const PasteTextIntent(SelectionChangedCause.keyboard),
-                      ),
-                    ),
-                    PlatformMenuItem(
-                      label: 'Select All',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyA,
-                        meta: true,
-                      ),
-                      onSelected: () => Actions.invoke(
-                        context,
-                        const SelectAllTextIntent(SelectionChangedCause.keyboard),
-                      ),
-                    ),
-                  ],
+                PlatformMenuItem(
+                  label: 'Open Board',
+                  onSelected: () => unawaited(_openBoard()),
+                ),
+                PlatformMenuItem(
+                  label: 'Import Trello JSON',
+                  onSelected: () => unawaited(_importBoard()),
+                ),
+                PlatformMenuItem(
+                  label: 'Close Active Board',
+                  onSelected: () => unawaited(_closeSelectedTab()),
                 ),
               ],
             ),
           ],
-          child: scaffold,
-        );
-      },
+        ),
+        PlatformMenu(
+          label: 'Edit',
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: 'Undo',
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyZ, meta: true),
+                  onSelected: () => Actions.invoke(
+                    context,
+                    const UndoTextIntent(SelectionChangedCause.keyboard),
+                  ),
+                ),
+                PlatformMenuItem(
+                  label: 'Redo',
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyZ,
+                    shift: true,
+                    meta: true,
+                  ),
+                  onSelected: () => Actions.invoke(
+                    context,
+                    const RedoTextIntent(SelectionChangedCause.keyboard),
+                  ),
+                ),
+                PlatformMenuItem(
+                  label: 'Cut',
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyX, meta: true),
+                  onSelected: () => Actions.invoke(
+                    context,
+                    const CopySelectionTextIntent.cut(SelectionChangedCause.keyboard),
+                  ),
+                ),
+                PlatformMenuItem(
+                  label: 'Copy',
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyC, meta: true),
+                  onSelected: () => Actions.invoke(context, CopySelectionTextIntent.copy),
+                ),
+                PlatformMenuItem(
+                  label: 'Paste',
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyV, meta: true),
+                  onSelected: () => Actions.invoke(
+                    context,
+                    const PasteTextIntent(SelectionChangedCause.keyboard),
+                  ),
+                ),
+                PlatformMenuItem(
+                  label: 'Select All',
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyA, meta: true),
+                  onSelected: () => Actions.invoke(
+                    context,
+                    const SelectAllTextIntent(SelectionChangedCause.keyboard),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+      child: body,
     );
   }
 
@@ -363,6 +378,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   child: ChoiceChip(
                     label: Text(tab.title),
                     selected: isSelected,
+                    backgroundColor: AppTheme.selection,
+                    selectedColor: AppTheme.secondary,
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? AppTheme.background
+                          : AppTheme.foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    side: const BorderSide(color: AppTheme.outline),
                     onSelected: (_) => widget.controller.selectBoardTab(tab.id),
                   ),
                 );
@@ -415,10 +439,22 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 if (!widget.controller.isFilterActive)
                   SizedBox(
                     width: 240,
-                    child: OutlinedButton.icon(
-                      onPressed: _addColumn,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Column'),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.addColumnButtonGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.outline),
+                      ),
+                      child: OutlinedButton.icon(
+                        onPressed: _addColumn,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.foreground,
+                          backgroundColor: Colors.transparent,
+                          side: BorderSide.none,
+                        ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Column'),
+                      ),
                     ),
                   ),
               ],
@@ -430,68 +466,79 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Widget _columnCard(BuildContext context, BoardColumn column) {
-    return Card(
-      child: SizedBox(
-        width: 300,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      column.title.trim().isEmpty ? 'New column' : column.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+    return Container(
+      width: 300,
+      decoration: BoxDecoration(
+        gradient: AppTheme.columnPanelGradient,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.outline),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    column.title.trim().isEmpty ? 'New column' : column.title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  if (!widget.controller.isFilterActive) ...<Widget>[
-                    IconButton(
-                      tooltip: 'Rename column',
-                      icon: const Icon(Icons.edit, size: 18),
-                      onPressed: () => _renameColumn(column),
-                    ),
-                    IconButton(
-                      tooltip: 'Delete column',
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      onPressed: () =>
-                          widget.controller.deleteColumn(column.id),
-                    ),
-                  ],
+                ),
+                if (!widget.controller.isFilterActive) ...<Widget>[
+                  IconButton(
+                    tooltip: 'Rename column',
+                    icon: const Icon(Icons.edit, size: 18),
+                    onPressed: () => _renameColumn(column),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete column',
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    onPressed: () => widget.controller.deleteColumn(column.id),
+                  ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Column(
-                children: <Widget>[
-                  if (!widget.controller.isFilterActive)
-                    _columnDropTarget(column: column, destinationItemId: null),
-                  ...column.items.map((BoardItem item) {
-                    return Column(
-                      children: <Widget>[
-                        _itemTile(item: item, sourceColumn: column),
-                        if (!widget.controller.isFilterActive)
-                          _columnDropTarget(
-                            column: column,
-                            destinationItemId: item.id,
-                          ),
-                      ],
-                    );
-                  }),
-                ],
-              ),
-              if (!widget.controller.isFilterActive) ...<Widget>[
-                const SizedBox(height: 4),
-                TextButton.icon(
+              ],
+            ),
+            const SizedBox(height: 8),
+            Column(
+              children: <Widget>[
+                if (!widget.controller.isFilterActive)
+                  _columnDropTarget(column: column, destinationItemId: null),
+                ...column.items.map((BoardItem item) {
+                  return Column(
+                    children: <Widget>[
+                      _itemTile(item: item, sourceColumn: column),
+                      if (!widget.controller.isFilterActive)
+                        _columnDropTarget(
+                          column: column,
+                          destinationItemId: item.id,
+                        ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            if (!widget.controller.isFilterActive) ...<Widget>[
+              const SizedBox(height: 4),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: AppTheme.addItemButtonGradient,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.background,
+                  ),
                   onPressed: () => _addItem(column),
                   icon: const Icon(Icons.add),
                   label: const Text('Add item'),
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -503,7 +550,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }) {
     final tile = Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
+        gradient: AppTheme.itemCardGradient,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.outline),
       ),
@@ -732,30 +779,32 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   Future<void> _openBoard() async {
     if (Platform.isMacOS) {
-      final nativePath = await _nativeOpenBoardPath();
-      if (nativePath != null && nativePath.isNotEmpty) {
-        await widget.controller.openBoard(nativePath);
+      final macPath = await _chooseFileViaAppleScript(
+        prompt: 'Open Board',
+        extensions: <String>['md', 'txt'],
+      );
+      if (macPath == null || macPath.isEmpty) {
         return;
       }
+      await widget.controller.openBoard(macPath);
+      return;
     }
 
     try {
       final file = await openFile(
-        acceptedTypeGroups: const <XTypeGroup>[
-          XTypeGroup(
-            label: 'Board Files',
-            extensions: <String>['md', 'txt'],
-          ),
-        ],
-      );
-
+            acceptedTypeGroups: const <XTypeGroup>[
+              XTypeGroup(
+                label: 'Board Files',
+                extensions: <String>['md', 'txt'],
+              ),
+            ],
+          )
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (file == null) {
+        await _openBoardViaPathPrompt();
         return;
       }
-
       await widget.controller.openBoard(file.path);
-    } on MissingPluginException {
-      await _openBoardViaPathPrompt();
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'openBoardUiFailure',
@@ -767,74 +816,59 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _createBoard() async {
-    if (Platform.isMacOS) {
-      final nativePath = await _nativeSaveBoardPath('KanoliBoard.md');
-      if (nativePath != null && nativePath.isNotEmpty) {
-        await widget.controller.createBoard(_normalizeMarkdownPath(nativePath));
-        return;
-      }
-    }
-
-    try {
-      const defaultName = 'KanoliBoard.md';
-      final path = await _resolveCreatePath(defaultName);
-      if (path == null) {
-        return;
-      }
-
-      await widget.controller.createBoard(path);
-    } on MissingPluginException {
-      await _createBoardViaPathPrompt('KanoliBoard.md');
-    } on Object catch (error, stackTrace) {
-      widget.controller.logger.error(
-        'createBoardUiFailure',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      await _createBoardViaPathPrompt('KanoliBoard.md');
-    }
+    await _createBoardViaPathPrompt('KanoliBoard.md');
   }
 
   Future<void> _importBoard() async {
     if (Platform.isMacOS) {
-      final jsonPath = await _nativeOpenJsonPath();
-      if (jsonPath != null && jsonPath.isNotEmpty) {
-        final suggested =
-            '${_baseNameWithoutExtension(jsonPath.split(Platform.pathSeparator).last)}.md';
-        final boardPath = await _nativeSaveBoardPath(suggested);
-        if (boardPath != null && boardPath.isNotEmpty) {
-          await widget.controller.importJsonBoard(
-            jsonPath: jsonPath,
-            boardPath: _normalizeMarkdownPath(boardPath),
-          );
-          return;
-        }
+      final jsonPath = await _chooseFileViaAppleScript(
+        prompt: 'Import Trello JSON',
+        extensions: <String>['json'],
+      );
+      if (jsonPath == null || jsonPath.isEmpty) {
+        return;
       }
+      final suggested =
+          '${_baseNameWithoutExtension(jsonPath.split(Platform.pathSeparator).last)}.md';
+      final boardPath = await _chooseSaveViaAppleScript(
+        prompt: 'Save Imported Board',
+        defaultName: suggested,
+      );
+      if (boardPath == null || boardPath.isEmpty) {
+        return;
+      }
+      await widget.controller.importJsonBoard(
+        jsonPath: jsonPath,
+        boardPath: _normalizeMarkdownPath(boardPath),
+      );
+      return;
     }
 
     try {
       final jsonFile = await openFile(
-        acceptedTypeGroups: const <XTypeGroup>[
-          XTypeGroup(label: 'JSON', extensions: <String>['json']),
-        ],
-      );
-
+            acceptedTypeGroups: const <XTypeGroup>[
+              XTypeGroup(label: 'JSON', extensions: <String>['json']),
+            ],
+          )
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (jsonFile == null) {
+        await _importBoardViaPathPrompt();
         return;
       }
 
-      final suggested = '${_baseNameWithoutExtension(jsonFile.name)}.md';
-      final boardPath = await _resolveCreatePath(suggested);
-      if (boardPath == null) {
+      final suggested =
+          '${_baseNameWithoutExtension(jsonFile.name)}.md';
+      final saveLocation = await getSaveLocation(suggestedName: suggested)
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+      if (saveLocation == null) {
+        await _importBoardViaPathPrompt();
         return;
       }
 
       await widget.controller.importJsonBoard(
         jsonPath: jsonFile.path,
-        boardPath: boardPath,
+        boardPath: _normalizeMarkdownPath(saveLocation.path),
       );
-    } on MissingPluginException {
-      await _importBoardViaPathPrompt();
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'importBoardUiFailure',
@@ -1057,11 +1091,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  String _baseNameWithoutExtension(String filename) {
-    final dot = filename.lastIndexOf('.');
-    return dot > 0 ? filename.substring(0, dot) : filename;
-  }
-
   String _normalizeTag(String value) {
     return value
         .trim()
@@ -1085,50 +1114,69 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
   }
 
-  Future<String?> _resolveCreatePath(String suggestedName) async {
+  String _baseNameWithoutExtension(String filename) {
+    final dot = filename.lastIndexOf('.');
+    return dot > 0 ? filename.substring(0, dot) : filename;
+  }
+
+  String _normalizeMarkdownPath(String path) {
+    if (path.toLowerCase().endsWith('.md')) {
+      return path;
+    }
+    return '$path.md';
+  }
+
+  Future<String?> _chooseFileViaAppleScript({
+    required String prompt,
+    required List<String> extensions,
+  }) async {
+    final extList = extensions.map((String ext) => '"$ext"').join(', ');
+    return _runAppleScript(<String>[
+      'try',
+      'set selectedFile to choose file with prompt "${_escapeAppleScript(prompt)}" of type {$extList}',
+      'return POSIX path of selectedFile',
+      'on error number -128',
+      'return ""',
+      'end try',
+    ]);
+  }
+
+  Future<String?> _chooseSaveViaAppleScript({
+    required String prompt,
+    required String defaultName,
+  }) async {
+    return _runAppleScript(<String>[
+      'try',
+      'set targetFile to choose file name with prompt "${_escapeAppleScript(prompt)}" default name "${_escapeAppleScript(defaultName)}"',
+      'return POSIX path of targetFile',
+      'on error number -128',
+      'return ""',
+      'end try',
+    ]);
+  }
+
+  Future<String?> _runAppleScript(List<String> scriptLines) async {
     try {
-      final saveLocation = await getSaveLocation(suggestedName: suggestedName);
-      if (saveLocation != null) {
-        return _normalizeMarkdownPath(saveLocation.path);
+      final args = <String>[];
+      for (final line in scriptLines) {
+        args..add('-e')..add(line);
       }
-    } on MissingPluginException {
-      // Fallback handled below.
-    }
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      final directory = await getApplicationDocumentsDirectory();
-      final fallbackPath =
-          '${directory.path}${Platform.pathSeparator}$suggestedName';
-      return _normalizeMarkdownPath(fallbackPath);
-    }
-
-    return null;
-  }
-
-  Future<String?> _nativeOpenBoardPath() async {
-    try {
-      return await _nativeDialogs.invokeMethod<String>('openBoard');
+      final result = await Process.run('osascript', args);
+      if (result.exitCode != 0) {
+        return null;
+      }
+      final output = (result.stdout as String).trim();
+      if (output.isEmpty) {
+        return null;
+      }
+      return output;
     } on Object {
       return null;
     }
   }
 
-  Future<String?> _nativeOpenJsonPath() async {
-    try {
-      return await _nativeDialogs.invokeMethod<String>('openJson');
-    } on Object {
-      return null;
-    }
-  }
-
-  Future<String?> _nativeSaveBoardPath(String suggestedName) async {
-    try {
-      return await _nativeDialogs.invokeMethod<String>('saveBoard', <String, Object?>{
-        'suggestedName': suggestedName,
-      });
-    } on Object {
-      return null;
-    }
+  String _escapeAppleScript(String input) {
+    return input.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
   }
 
   Future<void> _openBoardViaPathPrompt() async {
@@ -1192,13 +1240,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  String _normalizeMarkdownPath(String path) {
-    if (path.toLowerCase().endsWith('.md')) {
-      return path;
-    }
-
-    return '$path.md';
-  }
 }
 
 class _DragItemPayload {

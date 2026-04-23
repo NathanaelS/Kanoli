@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract final class AppTheme {
   static const Color background = Color(0xFF15141B);
+  static const Color backgroundSoft = Color(0xFF15141B);
   static const Color foreground = Color(0xFFBDBDBD);
   static const Color muted = Color(0xFF6D6D6D);
   static const Color primary = Color(0xFF8464C6);
@@ -11,20 +12,44 @@ abstract final class AppTheme {
   static const Color quinary = Color(0xFF6CB2C7);
   static const Color senary = Color(0xFFC55858);
   static const Color selection = Color(0x803D375E);
-  static const Color surfaceSoft = Color(0xCC201E2A);
-  static const Color surfaceElevated = Color(0xCC2B2740);
-  static const Color outline = Color(0x664D4675);
+  static const Color surfaceSoft = Color(0xCC1B1924);
+  static const Color surfaceElevated = Color(0xCC242033);
+  static const Color outline = Color(0x7A5D5192);
+  static const Color boardAuraPrimary = Color(0x2E8464C6);
+  static const Color boardAuraSecondary = Color(0x2A54C59F);
+  static const Color boardAuraPrimaryGlow = Color(0x3D8464C6);
+  static const Color boardAuraSecondaryGlow = Color(0x3354C59F);
 
   static const LinearGradient workspaceGradient = LinearGradient(
-    colors: <Color>[background, Color(0xFF221A34), Color(0xFF30224A)],
+    colors: <Color>[background, backgroundSoft, selection],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient startupPanelGradient = LinearGradient(
-    colors: <Color>[Color(0xCC2D2442), Color(0xCC1E2236)],
+    colors: <Color>[Color(0xCC2A223F), Color(0xCC171A2A), Color(0xCC243447)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient columnPanelGradient = LinearGradient(
+    colors: <Color>[Color(0x2E8464C6), backgroundSoft, Color(0x2454C59F)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient itemCardGradient = LinearGradient(
+    colors: <Color>[Color(0x388464C6), selection, Color(0x2A54C59F)],
+  );
+
+  static const LinearGradient addColumnButtonGradient = LinearGradient(
+    colors: <Color>[Color(0x578464C6), Color(0x3D54C59F)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient addItemButtonGradient = LinearGradient(
+    colors: <Color>[secondary, primary],
   );
 
   // Build once to keep theme setup cheap at runtime.
@@ -64,7 +89,7 @@ abstract final class AppTheme {
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
-        backgroundColor: Color(0xCC15141B),
+        backgroundColor: Color(0xB315141B),
         foregroundColor: foreground,
         elevation: 0,
       ),
