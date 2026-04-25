@@ -589,27 +589,31 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               ],
             ),
             const SizedBox(height: 8),
-            Column(
-              children: <Widget>[
-                if (!widget.controller.isFilterActive)
-                  _columnDropTarget(column: column, destinationItemId: null),
-                ...column.items.map((BoardItem item) {
-                  return Column(
-                    children: <Widget>[
-                      _itemTile(
-                        item: item,
-                        sourceColumn: column,
-                        visuals: visuals,
-                      ),
-                      if (!widget.controller.isFilterActive)
-                        _columnDropTarget(
-                          column: column,
-                          destinationItemId: item.id,
-                        ),
-                    ],
-                  );
-                }),
-              ],
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: <Widget>[
+                    if (!widget.controller.isFilterActive)
+                      _columnDropTarget(column: column, destinationItemId: null),
+                    ...column.items.map((BoardItem item) {
+                      return Column(
+                        children: <Widget>[
+                          _itemTile(
+                            item: item,
+                            sourceColumn: column,
+                            visuals: visuals,
+                          ),
+                          if (!widget.controller.isFilterActive)
+                            _columnDropTarget(
+                              column: column,
+                              destinationItemId: item.id,
+                            ),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
             ),
             if (!widget.controller.isFilterActive) ...<Widget>[
               const SizedBox(height: 4),
