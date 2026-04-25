@@ -1,5 +1,6 @@
 import Cocoa
 import FlutterMacOS
+import UniformTypeIdentifiers
 
 class MainFlutterWindow: NSWindow {
   private var nativeDialogsChannel: FlutterMethodChannel?
@@ -12,6 +13,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     setupNativeDialogsChannel(with: flutterViewController)
+    self.delegate = self
 
     super.awakeFromNib()
   }
@@ -33,6 +35,7 @@ class MainFlutterWindow: NSWindow {
   }
 
   private func handleNativeDialog(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    debugLog("method=\(call.method)")
     switch call.method {
     case "openBoard":
       presentOpenPanel(extensions: ["md", "txt"], result: result)
@@ -42,6 +45,10 @@ class MainFlutterWindow: NSWindow {
       let args = call.arguments as? [String: Any]
       let suggestedName = args?["suggestedName"] as? String ?? "KanoliBoard.md"
       presentSavePanel(suggestedName: suggestedName, result: result)
+    case "hideWindow":
+      hideWindow(result: result)
+    case "showWindow":
+      showWindow(result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -53,14 +60,20 @@ class MainFlutterWindow: NSWindow {
       panel.canChooseFiles = true
       panel.canChooseDirectories = false
       panel.allowsMultipleSelection = false
-      panel.allowedFileTypes = extensions
-      panel.beginSheetModal(for: self) { response in
-        guard response == .OK else {
-          result(nil)
-          return
-        }
-        result(panel.url?.path)
+      self.applyAllowedTypes(panel: panel, extensions: extensions)
+      NSApp.activate(ignoringOtherApps: true)
+      self.makeKeyAndOrderFront(nil)
+      self.debugLog("openPanel allowedFileTypes=\(String(describing: panel.allowedFileTypes))")
+      let response = panel.runModal()
+      self.debugLog("openPanel response=\(response.rawValue)")
+      guard response == .OK else {
+        self.debugLog("openPanel cancelled")
+        result(nil)
+        return
       }
+      let path = panel.url?.path
+      self.debugLog("openPanel selectedPath=\(path ?? "<nil>")")
+      result(path)
     }
   }
 
@@ -69,14 +82,94 @@ class MainFlutterWindow: NSWindow {
       let panel = NSSavePanel()
       panel.canCreateDirectories = true
       panel.nameFieldStringValue = suggestedName
-      panel.allowedFileTypes = ["md"]
-      panel.beginSheetModal(for: self) { response in
-        guard response == .OK else {
-          result(nil)
-          return
-        }
-        result(panel.url?.path)
+      self.applyAllowedTypes(panel: panel, extensions: ["md"])
+      panel.isExtensionHidden = false
+      NSApp.activate(ignoringOtherApps: true)
+      self.makeKeyAndOrderFront(nil)
+      self.debugLog("savePanel suggestedName=\(suggestedName)")
+      self.focusSavePanelNameField(retryCount: 12)
+      let response = panel.runModal()
+      self.debugLog("savePanel response=\(response.rawValue)")
+      guard response == .OK else {
+        self.debugLog("savePanel cancelled")
+        result(nil)
+        return
+      }
+      let path = panel.url?.path
+      self.debugLog("savePanel selectedPath=\(path ?? "<nil>")")
+      result(path)
+    }
+  }
+
+  private func hideWindow(result: @escaping FlutterResult) {
+    DispatchQueue.main.async {
+      self.orderOut(nil)
+      result(nil)
+    }
+  }
+
+  private func showWindow(result: @escaping FlutterResult) {
+    DispatchQueue.main.async {
+      self.makeKeyAndOrderFront(nil)
+      NSApp.activate(ignoringOtherApps: true)
+      result(nil)
+    }
+  }
+
+  private func debugLog(_ message: String) {
+    NSLog("[KanoliDialog] %@", message)
+  }
+
+  private func applyAllowedTypes(panel: NSSavePanel, extensions: [String]) {
+    if #available(macOS 11.0, *) {
+      let contentTypes = extensions.compactMap { UTType(filenameExtension: $0) }
+      if !contentTypes.isEmpty {
+        panel.allowedContentTypes = contentTypes
+        return
       }
     }
+    panel.allowedFileTypes = extensions
+  }
+
+  private func focusSavePanelNameField(retryCount: Int) {
+    guard retryCount >= 0 else {
+      return
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
+      guard let saveWindow = NSApp.keyWindow else {
+        self.focusSavePanelNameField(retryCount: retryCount - 1)
+        return
+      }
+      guard let textField = self.findEditableTextField(in: saveWindow.contentView) else {
+        self.focusSavePanelNameField(retryCount: retryCount - 1)
+        return
+      }
+      saveWindow.makeFirstResponder(textField)
+      textField.selectText(nil)
+      self.debugLog("savePanel focused name field")
+    }
+  }
+
+  private func findEditableTextField(in view: NSView?) -> NSTextField? {
+    guard let view = view else {
+      return nil
+    }
+    if let textField = view as? NSTextField, textField.isEditable, !textField.isHidden {
+      return textField
+    }
+    for subview in view.subviews {
+      if let textField = findEditableTextField(in: subview) {
+        return textField
+      }
+    }
+    return nil
+  }
+}
+
+extension MainFlutterWindow: NSWindowDelegate {
+  func windowShouldClose(_ sender: NSWindow) -> Bool {
+    sender.orderOut(nil)
+    return false
   }
 }

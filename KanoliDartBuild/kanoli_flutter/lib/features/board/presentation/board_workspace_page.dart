@@ -27,8 +27,31 @@ class BoardWorkspacePage extends StatefulWidget {
 }
 
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
+  final AuraIntensity _auraIntensity = AuraIntensity.subtle;
+  static const MethodChannel _nativeDialogsChannel = MethodChannel(
+    'kanoli/native_dialogs',
+  );
+  String? _pendingNewColumnId;
+  String? _pendingNewItemId;
+  final TextEditingController _newColumnTitleController =
+      TextEditingController();
+  final TextEditingController _newItemTitleController = TextEditingController();
+  final FocusNode _newColumnTitleFocusNode = FocusNode();
+  final FocusNode _newItemTitleFocusNode = FocusNode();
+  bool _dialogInProgress = false;
+
+  @override
+  void dispose() {
+    _newColumnTitleController.dispose();
+    _newItemTitleController.dispose();
+    _newColumnTitleFocusNode.dispose();
+    _newItemTitleFocusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final visuals = AppTheme.visuals(_auraIntensity);
     final body = ListenableBuilder(
       listenable: widget.controller,
       builder: (BuildContext context, Widget? child) {
@@ -91,51 +114,53 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
             ],
           ),
           body: DecoratedBox(
-            decoration: const BoxDecoration(gradient: AppTheme.workspaceGradient),
+            decoration: BoxDecoration(gradient: visuals.workspaceGradient),
             child: Stack(
               children: <Widget>[
-                const Positioned(
-                  left: -140,
-                  top: -120,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: <Color>[
-                            AppTheme.boardAuraPrimaryGlow,
-                            Color(0x008464C6),
-                          ],
-                          radius: 0.9,
+                if (_auraIntensity == AuraIntensity.vivid)
+                  Positioned(
+                    left: -140,
+                    top: -120,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: <Color>[
+                              visuals.primaryGlow,
+                              const Color(0x008464C6),
+                            ],
+                            radius: 0.9,
+                          ),
                         ),
+                        child: const SizedBox(width: 360, height: 360),
                       ),
-                      child: SizedBox(width: 360, height: 360),
                     ),
                   ),
-                ),
-                const Positioned(
-                  right: -110,
-                  bottom: -90,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: <Color>[
-                            AppTheme.boardAuraSecondaryGlow,
-                            Color(0x0054C59F),
-                          ],
-                          radius: 0.9,
+                if (_auraIntensity == AuraIntensity.vivid)
+                  Positioned(
+                    right: -110,
+                    bottom: -90,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: <Color>[
+                              visuals.secondaryGlow,
+                              const Color(0x0054C59F),
+                            ],
+                            radius: 0.9,
+                          ),
                         ),
+                        child: const SizedBox(width: 320, height: 320),
                       ),
-                      child: SizedBox(width: 320, height: 320),
                     ),
                   ),
-                ),
                 Positioned.fill(
                   child: widget.controller.hasActiveBoard
-                      ? _boardView(context)
-                      : _startupView(context),
+                      ? _boardView(context, visuals)
+                      : _startupView(context, visuals),
                 ),
               ],
             ),
@@ -190,7 +215,9 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 if (PlatformProvidedMenuItem.hasMenu(
                   PlatformProvidedMenuItemType.quit,
                 ))
-                  const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.quit),
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.quit,
+                  ),
               ],
             ),
           ],
@@ -216,6 +243,27 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   label: 'Close Active Board',
                   onSelected: () => unawaited(_closeSelectedTab()),
                 ),
+                PlatformMenuItem(
+                  label: 'Close Window',
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyW,
+                    meta: true,
+                  ),
+                  onSelected: () => unawaited(_hideWindowViaNative()),
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: 'View',
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: 'Show Kanoli Window',
+                  onSelected: () => unawaited(_showWindowViaNative()),
+                ),
               ],
             ),
           ],
@@ -227,7 +275,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               members: <PlatformMenuItem>[
                 PlatformMenuItem(
                   label: 'Undo',
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyZ, meta: true),
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyZ,
+                    meta: true,
+                  ),
                   onSelected: () => Actions.invoke(
                     context,
                     const UndoTextIntent(SelectionChangedCause.keyboard),
@@ -247,20 +298,32 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ),
                 PlatformMenuItem(
                   label: 'Cut',
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyX, meta: true),
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyX,
+                    meta: true,
+                  ),
                   onSelected: () => Actions.invoke(
                     context,
-                    const CopySelectionTextIntent.cut(SelectionChangedCause.keyboard),
+                    const CopySelectionTextIntent.cut(
+                      SelectionChangedCause.keyboard,
+                    ),
                   ),
                 ),
                 PlatformMenuItem(
                   label: 'Copy',
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyC, meta: true),
-                  onSelected: () => Actions.invoke(context, CopySelectionTextIntent.copy),
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyC,
+                    meta: true,
+                  ),
+                  onSelected: () =>
+                      Actions.invoke(context, CopySelectionTextIntent.copy),
                 ),
                 PlatformMenuItem(
                   label: 'Paste',
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyV, meta: true),
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyV,
+                    meta: true,
+                  ),
                   onSelected: () => Actions.invoke(
                     context,
                     const PasteTextIntent(SelectionChangedCause.keyboard),
@@ -268,7 +331,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ),
                 PlatformMenuItem(
                   label: 'Select All',
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyA, meta: true),
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyA,
+                    meta: true,
+                  ),
                   onSelected: () => Actions.invoke(
                     context,
                     const SelectAllTextIntent(SelectionChangedCause.keyboard),
@@ -283,13 +349,13 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  Widget _startupView(BuildContext context) {
+  Widget _startupView(BuildContext context, AuraVisualProfile visuals) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            gradient: AppTheme.startupPanelGradient,
+            gradient: visuals.startupPanelGradient,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppTheme.outline),
             boxShadow: const <BoxShadow>[
@@ -357,7 +423,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  Widget _boardView(BuildContext context) {
+  Widget _boardView(BuildContext context, AuraVisualProfile visuals) {
     final tabs = widget.controller.boardTabs;
     final selectedTabId = widget.controller.selectedTabId;
     final columns = widget.controller.isFilterActive
@@ -433,7 +499,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ...columns.map((BoardColumn column) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
-                    child: _columnCard(context, column),
+                    child: _columnCard(context, column, visuals),
                   );
                 }),
                 if (!widget.controller.isFilterActive)
@@ -441,7 +507,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                     width: 240,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: AppTheme.addColumnButtonGradient,
+                        gradient: visuals.addColumnButtonGradient,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppTheme.outline),
                       ),
@@ -465,11 +531,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  Widget _columnCard(BuildContext context, BoardColumn column) {
+  Widget _columnCard(
+    BuildContext context,
+    BoardColumn column,
+    AuraVisualProfile visuals,
+  ) {
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        gradient: AppTheme.columnPanelGradient,
+        gradient: visuals.columnPanelGradient,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.outline),
       ),
@@ -481,12 +551,28 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    column.title.trim().isEmpty ? 'New column' : column.title,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: _pendingNewColumnId == column.id
+                      ? TextField(
+                          controller: _newColumnTitleController,
+                          focusNode: _newColumnTitleFocusNode,
+                          autofocus: true,
+                          textInputAction: TextInputAction.done,
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            hintText: 'New column',
+                            border: InputBorder.none,
+                          ),
+                          onSubmitted: (_) => _commitPendingNewColumn(),
+                          onTapOutside: (_) => _commitPendingNewColumn(),
+                        )
+                      : Text(
+                          column.title.trim().isEmpty
+                              ? 'New column'
+                              : column.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
                 if (!widget.controller.isFilterActive) ...<Widget>[
                   IconButton(
@@ -510,7 +596,11 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ...column.items.map((BoardItem item) {
                   return Column(
                     children: <Widget>[
-                      _itemTile(item: item, sourceColumn: column),
+                      _itemTile(
+                        item: item,
+                        sourceColumn: column,
+                        visuals: visuals,
+                      ),
                       if (!widget.controller.isFilterActive)
                         _columnDropTarget(
                           column: column,
@@ -525,7 +615,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               const SizedBox(height: 4),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: AppTheme.addItemButtonGradient,
+                  gradient: visuals.addItemButtonGradient,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextButton.icon(
@@ -547,20 +637,37 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   Widget _itemTile({
     required BoardItem item,
     required BoardColumn sourceColumn,
+    required AuraVisualProfile visuals,
   }) {
     final tile = Container(
       decoration: BoxDecoration(
-        gradient: AppTheme.itemCardGradient,
+        gradient: visuals.itemCardGradient,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.outline),
       ),
       child: ListTile(
         dense: true,
-        title: Text(item.displayTitle),
+        title: _pendingNewItemId == item.id
+            ? TextField(
+                controller: _newItemTitleController,
+                focusNode: _newItemTitleFocusNode,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  hintText: 'New item',
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (_) => _commitPendingNewItem(),
+                onTapOutside: (_) => _commitPendingNewItem(),
+              )
+            : Text(item.displayTitle),
         subtitle: item.metadataSummary.isEmpty
             ? null
             : Text(item.metadataSummary),
-        onTap: () => _openItemEditor(item.id),
+        onTap: _pendingNewItemId == item.id
+            ? null
+            : () => _openItemEditor(item.id),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -568,13 +675,19 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               IconButton(
                 tooltip: 'Open item editor',
                 icon: const Icon(Icons.open_in_new, size: 18),
-                onPressed: () => _openItemEditor(item.id),
+                onPressed: _pendingNewItemId == item.id
+                    ? null
+                    : () => _openItemEditor(item.id),
               ),
             IconButton(
               tooltip: 'Item actions',
               icon: const Icon(Icons.more_horiz, size: 18),
-              onPressed: () =>
-                  _showItemActions(item: item, sourceColumn: sourceColumn),
+              onPressed: _pendingNewItemId == item.id
+                  ? null
+                  : () => _showItemActions(
+                      item: item,
+                      sourceColumn: sourceColumn,
+                    ),
             ),
           ],
         ),
@@ -779,27 +892,51 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   Future<void> _openBoard() async {
     if (Platform.isMacOS) {
-      final macPath = await _chooseFileViaAppleScript(
-        prompt: 'Open Board',
-        extensions: <String>['md', 'txt'],
-      );
-      if (macPath == null || macPath.isEmpty) {
+      if (_dialogInProgress) {
+        widget.controller.logger.warning('dialogBusy', <String, Object?>{
+          'requested': 'openBoard',
+        });
         return;
       }
-      await widget.controller.openBoard(macPath);
+      _dialogInProgress = true;
+      widget.controller.logger.info('openBoardUiStart', <String, Object?>{
+        'platform': 'macos',
+      });
+      try {
+        final nativePath = await _chooseFileViaNativeDialog(
+          method: 'openBoard',
+        );
+        if (nativePath == null || nativePath.trim().isEmpty) {
+          widget.controller.logger.warning(
+            'openBoardUiCancelled',
+            <String, Object?>{'source': 'native'},
+          );
+          return;
+        }
+        widget.controller.logger.info('openBoardUiSelected', <String, Object?>{
+          'path': nativePath,
+          'source': 'native',
+        });
+        await widget.controller.openBoard(nativePath);
+      } on Object catch (error, stackTrace) {
+        widget.controller.logger.error(
+          'openBoardUiFailure',
+          error: error,
+          stackTrace: stackTrace,
+          metadata: <String, Object?>{'platform': 'macos'},
+        );
+      } finally {
+        _dialogInProgress = false;
+      }
       return;
     }
 
     try {
       final file = await openFile(
-            acceptedTypeGroups: const <XTypeGroup>[
-              XTypeGroup(
-                label: 'Board Files',
-                extensions: <String>['md', 'txt'],
-              ),
-            ],
-          )
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+        acceptedTypeGroups: const <XTypeGroup>[
+          XTypeGroup(label: 'Board Files', extensions: <String>['md', 'txt']),
+        ],
+      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (file == null) {
         await _openBoardViaPathPrompt();
         return;
@@ -815,51 +952,182 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
   }
 
+  Future<void> _hideWindowViaNative() async {
+    if (!Platform.isMacOS) {
+      return;
+    }
+
+    try {
+      await _nativeDialogsChannel.invokeMethod<void>('hideWindow');
+    } on PlatformException {
+      // Ignore on unsupported hosts.
+    }
+  }
+
+  Future<void> _showWindowViaNative() async {
+    if (!Platform.isMacOS) {
+      return;
+    }
+
+    try {
+      await _nativeDialogsChannel.invokeMethod<void>('showWindow');
+    } on PlatformException {
+      // Ignore on unsupported hosts.
+    }
+  }
+
   Future<void> _createBoard() async {
-    await _createBoardViaPathPrompt('KanoliBoard.md');
+    if (Platform.isMacOS) {
+      if (_dialogInProgress) {
+        widget.controller.logger.warning('dialogBusy', <String, Object?>{
+          'requested': 'createBoard',
+        });
+        return;
+      }
+      _dialogInProgress = true;
+      widget.controller.logger.info('createBoardUiStart', <String, Object?>{
+        'platform': 'macos',
+      });
+      try {
+        final nativePath = await _chooseSaveViaNativeDialog(
+          suggestedName: 'KanoliBoard.md',
+        );
+        if (nativePath != null && nativePath.trim().isNotEmpty) {
+          widget.controller.logger.info(
+            'createBoardUiSelected',
+            <String, Object?>{'path': nativePath, 'source': 'native'},
+          );
+          await widget.controller.createBoard(
+            _normalizeMarkdownPath(nativePath),
+          );
+          return;
+        }
+
+        widget.controller.logger.warning(
+          'createBoardUiCancelled',
+          <String, Object?>{'source': 'native'},
+        );
+      } finally {
+        _dialogInProgress = false;
+      }
+      return;
+    }
+
+    try {
+      final saveLocation = await getSaveLocation(
+        suggestedName: 'KanoliBoard.md',
+      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
+      if (saveLocation == null) {
+        await _createBoardViaPathPrompt('KanoliBoard.md');
+        return;
+      }
+
+      await widget.controller.createBoard(
+        _normalizeMarkdownPath(saveLocation.path),
+      );
+    } on Object catch (error, stackTrace) {
+      widget.controller.logger.error(
+        'createBoardUiFailure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await _createBoardViaPathPrompt('KanoliBoard.md');
+    }
   }
 
   Future<void> _importBoard() async {
     if (Platform.isMacOS) {
-      final jsonPath = await _chooseFileViaAppleScript(
-        prompt: 'Import Trello JSON',
-        extensions: <String>['json'],
-      );
-      if (jsonPath == null || jsonPath.isEmpty) {
+      if (_dialogInProgress) {
+        widget.controller.logger.warning('dialogBusy', <String, Object?>{
+          'requested': 'importBoard',
+        });
         return;
       }
-      final suggested =
-          '${_baseNameWithoutExtension(jsonPath.split(Platform.pathSeparator).last)}.md';
-      final boardPath = await _chooseSaveViaAppleScript(
-        prompt: 'Save Imported Board',
-        defaultName: suggested,
-      );
-      if (boardPath == null || boardPath.isEmpty) {
-        return;
+      _dialogInProgress = true;
+      widget.controller.logger.info('importBoardUiStart', <String, Object?>{
+        'platform': 'macos',
+      });
+      try {
+        final jsonPath = await _chooseFileViaNativeDialog(method: 'openJson');
+        if (jsonPath == null || jsonPath.trim().isEmpty) {
+          widget.controller.logger.warning(
+            'importBoardUiCancelled',
+            <String, Object?>{'source': 'native_open'},
+          );
+          return;
+        }
+        if (!_isJsonPath(jsonPath)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please select a .json file to import.'),
+              ),
+            );
+          }
+          widget.controller.logger.warning(
+            'importBoardInvalidType',
+            <String, Object?>{'path': jsonPath},
+          );
+          return;
+        }
+        final jsonFile = XFile(jsonPath);
+
+        widget.controller.logger.info(
+          'importBoardUiSelectedJson',
+          <String, Object?>{'path': jsonFile.path, 'source': 'native_open'},
+        );
+        final suggested = '${_baseNameWithoutExtension(jsonFile.name)}.md';
+        final savePath = await _chooseSaveViaNativeDialog(
+          suggestedName: suggested,
+        );
+        if (savePath == null || savePath.trim().isEmpty) {
+          widget.controller.logger.warning(
+            'importBoardUiCancelled',
+            <String, Object?>{'source': 'native_save'},
+          );
+          return;
+        }
+        widget.controller.logger.info(
+          'importBoardUiSelectedSavePath',
+          <String, Object?>{'path': savePath},
+        );
+        await widget.controller.importJsonBoard(
+          jsonPath: jsonFile.path,
+          boardPath: _normalizeMarkdownPath(savePath),
+        );
+      } on Object catch (error, stackTrace) {
+        widget.controller.logger.error(
+          'importBoardUiFailure',
+          error: error,
+          stackTrace: stackTrace,
+          metadata: <String, Object?>{'platform': 'macos'},
+        );
+      } finally {
+        _dialogInProgress = false;
       }
-      await widget.controller.importJsonBoard(
-        jsonPath: jsonPath,
-        boardPath: _normalizeMarkdownPath(boardPath),
-      );
       return;
     }
 
     try {
       final jsonFile = await openFile(
-            acceptedTypeGroups: const <XTypeGroup>[
-              XTypeGroup(label: 'JSON', extensions: <String>['json']),
-            ],
-          )
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+        acceptedTypeGroups: const <XTypeGroup>[
+          XTypeGroup(
+            label: 'JSON',
+            extensions: <String>['json'],
+            mimeTypes: <String>['application/json', 'text/json'],
+            uniformTypeIdentifiers: <String>['public.json'],
+          ),
+        ],
+      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (jsonFile == null) {
         await _importBoardViaPathPrompt();
         return;
       }
 
-      final suggested =
-          '${_baseNameWithoutExtension(jsonFile.name)}.md';
-      final saveLocation = await getSaveLocation(suggestedName: suggested)
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+      final suggested = '${_baseNameWithoutExtension(jsonFile.name)}.md';
+      final saveLocation = await getSaveLocation(
+        suggestedName: suggested,
+      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (saveLocation == null) {
         await _importBoardViaPathPrompt();
         return;
@@ -985,19 +1253,21 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   Future<void> _addColumn() async {
     final column = widget.controller.addColumn();
-    final title = await _promptText(
-      context,
-      title: 'Column title',
-      initialValue: '',
-      hintText: 'New column',
-      submitLabel: 'Save',
-    );
-
-    if (title == null) {
-      return;
+    _newColumnTitleController.clear();
+    if (mounted) {
+      setState(() {
+        _pendingNewColumnId = column.id;
+      });
+    } else {
+      _pendingNewColumnId = column.id;
     }
 
-    widget.controller.updateColumnTitle(column.id, title);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _pendingNewColumnId != column.id) {
+        return;
+      }
+      _newColumnTitleFocusNode.requestFocus();
+    });
   }
 
   Future<void> _renameColumn(BoardColumn column) async {
@@ -1022,20 +1292,62 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       return;
     }
 
-    final title = await _promptText(
-      context,
-      title: 'Item title',
-      initialValue: '',
-      hintText: 'New item',
-      submitLabel: 'Save',
-    );
-
-    if (title == null || title.trim().isEmpty) {
-      widget.controller.deleteItem(item.id);
-      return;
+    _newItemTitleController.clear();
+    if (mounted) {
+      setState(() {
+        _pendingNewItemId = item.id;
+      });
+    } else {
+      _pendingNewItemId = item.id;
     }
 
-    widget.controller.updateItemTitle(item.id, title);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _pendingNewItemId != item.id) {
+        return;
+      }
+      _newItemTitleFocusNode.requestFocus();
+    });
+  }
+
+  void _commitPendingNewColumn() {
+    final columnId = _pendingNewColumnId;
+    if (columnId == null) {
+      return;
+    }
+    final title = _newColumnTitleController.text.trim();
+    widget.controller.updateColumnTitle(columnId, title);
+    if (!mounted) {
+      _pendingNewColumnId = null;
+      _newColumnTitleController.clear();
+      return;
+    }
+    setState(() {
+      _pendingNewColumnId = null;
+      _newColumnTitleController.clear();
+    });
+  }
+
+  void _commitPendingNewItem() {
+    final itemId = _pendingNewItemId;
+    if (itemId == null) {
+      return;
+    }
+    final title = _newItemTitleController.text.trim();
+    if (title.isEmpty) {
+      widget.controller.deleteItem(itemId);
+    } else {
+      widget.controller.updateItemTitle(itemId, title);
+    }
+
+    if (!mounted) {
+      _pendingNewItemId = null;
+      _newItemTitleController.clear();
+      return;
+    }
+    setState(() {
+      _pendingNewItemId = null;
+      _newItemTitleController.clear();
+    });
   }
 
   void _showErrorIfNeeded(BuildContext context) {
@@ -1126,57 +1438,40 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     return '$path.md';
   }
 
-  Future<String?> _chooseFileViaAppleScript({
-    required String prompt,
-    required List<String> extensions,
-  }) async {
-    final extList = extensions.map((String ext) => '"$ext"').join(', ');
-    return _runAppleScript(<String>[
-      'try',
-      'set selectedFile to choose file with prompt "${_escapeAppleScript(prompt)}" of type {$extList}',
-      'return POSIX path of selectedFile',
-      'on error number -128',
-      'return ""',
-      'end try',
-    ]);
+  bool _isJsonPath(String path) {
+    return path.toLowerCase().endsWith('.json');
   }
 
-  Future<String?> _chooseSaveViaAppleScript({
-    required String prompt,
-    required String defaultName,
+  Future<String?> _chooseSaveViaNativeDialog({
+    required String suggestedName,
   }) async {
-    return _runAppleScript(<String>[
-      'try',
-      'set targetFile to choose file name with prompt "${_escapeAppleScript(prompt)}" default name "${_escapeAppleScript(defaultName)}"',
-      'return POSIX path of targetFile',
-      'on error number -128',
-      'return ""',
-      'end try',
-    ]);
-  }
-
-  Future<String?> _runAppleScript(List<String> scriptLines) async {
     try {
-      final args = <String>[];
-      for (final line in scriptLines) {
-        args..add('-e')..add(line);
-      }
-      final result = await Process.run('osascript', args);
-      if (result.exitCode != 0) {
+      final path = await _nativeDialogsChannel
+          .invokeMethod<String>('saveBoard', <String, Object?>{
+            'suggestedName': suggestedName,
+          })
+          .timeout(const Duration(seconds: 30), onTimeout: () => null);
+      if (path == null || path.trim().isEmpty) {
         return null;
       }
-      final output = (result.stdout as String).trim();
-      if (output.isEmpty) {
-        return null;
-      }
-      return output;
-    } on Object {
+      return path.trim();
+    } on PlatformException {
       return null;
     }
   }
 
-  String _escapeAppleScript(String input) {
-    return input.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+  Future<String?> _chooseFileViaNativeDialog({required String method}) async {
+    try {
+      final path = await _nativeDialogsChannel
+          .invokeMethod<String>(method)
+          .timeout(const Duration(seconds: 30), onTimeout: () => null);
+      if (path == null || path.trim().isEmpty) {
+        return null;
+      }
+      return path.trim();
+    } on PlatformException {
+      return null;
+    }
   }
 
   Future<void> _openBoardViaPathPrompt() async {
@@ -1239,7 +1534,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       boardPath: boardPath.trim(),
     );
   }
-
 }
 
 class _DragItemPayload {

@@ -96,8 +96,24 @@ class BoardSessionController extends ChangeNotifier {
         return;
       }
 
-      _boardTabs.clear();
+      final loadByPath = <String, BoardLoadResult>{};
       for (final path in tabPaths) {
+        final loadResult = _markdownBoardStore.loadBoard(path);
+        if (loadResult.errorMessage == null) {
+          loadByPath[path] = loadResult;
+        }
+      }
+
+      if (loadByPath.isEmpty) {
+        _boardTabs.clear();
+        _columns = <BoardColumn>[];
+        _selectedTabId = null;
+        await _prefs!.remove('kanoli.session.v1');
+        return;
+      }
+
+      _boardTabs.clear();
+      for (final path in loadByPath.keys) {
         _boardTabs.add(BoardTabState(id: IdGenerator.uuid(), path: path));
       }
 
@@ -108,9 +124,9 @@ class BoardSessionController extends ChangeNotifier {
           _boardTabs.first;
       _selectedTabId = selectedTab.id;
 
-      final loadResult = _markdownBoardStore.loadBoard(selectedTab.path);
-      if (loadResult.errorMessage == null) {
-        _columns = loadResult.columns;
+      _columns = loadByPath[selectedTab.path]!.columns;
+      if (loadByPath.length != tabPaths.length) {
+        unawaited(_persistSessionState());
       }
       notifyListeners();
     } on Object catch (error, stackTrace) {

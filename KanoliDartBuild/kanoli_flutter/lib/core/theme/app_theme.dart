@@ -1,5 +1,29 @@
 import 'package:flutter/material.dart';
 
+enum AuraIntensity { subtle, vivid }
+
+class AuraVisualProfile {
+  const AuraVisualProfile({
+    required this.workspaceGradient,
+    required this.startupPanelGradient,
+    required this.columnPanelGradient,
+    required this.itemCardGradient,
+    required this.addColumnButtonGradient,
+    required this.addItemButtonGradient,
+    required this.primaryGlow,
+    required this.secondaryGlow,
+  });
+
+  final LinearGradient workspaceGradient;
+  final LinearGradient startupPanelGradient;
+  final LinearGradient columnPanelGradient;
+  final LinearGradient itemCardGradient;
+  final LinearGradient addColumnButtonGradient;
+  final LinearGradient addItemButtonGradient;
+  final Color primaryGlow;
+  final Color secondaryGlow;
+}
+
 abstract final class AppTheme {
   static const Color background = Color(0xFF15141B);
   static const Color backgroundSoft = Color(0xFF15141B);
@@ -51,6 +75,74 @@ abstract final class AppTheme {
   static const LinearGradient addItemButtonGradient = LinearGradient(
     colors: <Color>[secondary, primary],
   );
+
+  static const AuraVisualProfile subtleAura = AuraVisualProfile(
+    workspaceGradient: LinearGradient(
+      colors: <Color>[
+        Color(0xFF15141B),
+        Color(0xFF1A1823),
+        Color(0xFF1C1D2A),
+        Color(0xFF18262D),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    startupPanelGradient: LinearGradient(
+      colors: <Color>[
+        Color(0xCC2A223B),
+        Color(0xCC1B1D2C),
+        Color(0xCC202A3A),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    columnPanelGradient: LinearGradient(
+      colors: <Color>[
+        Color(0x238464C6),
+        Color(0xCC191923),
+        Color(0x1F3C746E),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    itemCardGradient: LinearGradient(
+      colors: <Color>[
+        Color(0x258464C6),
+        Color(0x803D375E),
+        Color(0x1E4BA88A),
+      ],
+    ),
+    addColumnButtonGradient: LinearGradient(
+      colors: <Color>[Color(0x4D8464C6), Color(0x3554C59F)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    addItemButtonGradient: LinearGradient(
+      colors: <Color>[Color(0xDD54C59F), Color(0xDD8464C6)],
+    ),
+    primaryGlow: Color(0x148464C6),
+    secondaryGlow: Color(0x1254C59F),
+  );
+
+  static const AuraVisualProfile vividAura = AuraVisualProfile(
+    workspaceGradient: workspaceGradient,
+    startupPanelGradient: startupPanelGradient,
+    columnPanelGradient: columnPanelGradient,
+    itemCardGradient: itemCardGradient,
+    addColumnButtonGradient: addColumnButtonGradient,
+    addItemButtonGradient: addItemButtonGradient,
+    primaryGlow: boardAuraPrimaryGlow,
+    secondaryGlow: boardAuraSecondaryGlow,
+  );
+
+  static AuraVisualProfile visuals(AuraIntensity intensity) {
+    switch (intensity) {
+      case AuraIntensity.subtle:
+        return subtleAura;
+      case AuraIntensity.vivid:
+        return vividAura;
+    }
+  }
 
   // Build once to keep theme setup cheap at runtime.
   static final ThemeData darkAura = _buildDarkAura();
