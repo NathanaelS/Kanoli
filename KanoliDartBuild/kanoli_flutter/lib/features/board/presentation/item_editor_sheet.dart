@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../data/board/todo_board_store.dart';
@@ -31,6 +35,9 @@ class ItemEditorSheet extends StatefulWidget {
 
 class _ItemEditorSheetState extends State<ItemEditorSheet> {
   final TodoBoardStore _todoStore = TodoBoardStore();
+  static const MethodChannel _nativeDialogsChannel = MethodChannel(
+    'kanoli/native_dialogs',
+  );
   static const Set<String> _supportedPriorities = <String>{'A', 'B', 'C', 'D'};
 
   late BoardItem _draft;
@@ -85,12 +92,11 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         .toList();
     _labelsController.text = _draft.labels.join(', ');
 
-    _loadTodoListIfAvailable();
+    unawaited(_loadTodoListIfAvailable());
   }
 
   @override
   void dispose() {
-    _saveDraft();
     _todoAddController.dispose();
     _labelsController.dispose();
     super.dispose();
@@ -638,7 +644,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     widget.onSave(_draft);
   }
 
-  void _loadTodoListIfAvailable() {
+  Future<void> _loadTodoListIfAvailable() async {
     final boardFilePath = widget.boardFilePath;
     if (boardFilePath == null) {
       return;
@@ -647,30 +653,93 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     final defaultPath = _todoStore.defaultTodoListPath(
       boardFilePath: boardFilePath,
     );
-    final existing = _todoStore.existingTodoListPath(defaultPath);
+    final storedPath = await _storedTodoListPath(boardFilePath);
+    final candidates = <String>[
+      if (storedPath != null && storedPath.trim().isNotEmpty) storedPath,
+      defaultPath,
+    ];
 
-    if (existing == null) {
-      return;
+    for (final path in candidates) {
+      final existing = _todoStore.existingTodoListPath(path);
+      if (existing == null) {
+        continue;
+      }
+
+      try {
+        final text = File(existing).readAsStringSync();
+        final parsed = _todoStore.parse(text: text, cardId: _draft.id);
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _todoListPath = existing;
+          _todoItems = parsed.currentCardItems;
+          _otherTodoLines = parsed.otherLines;
+        });
+        unawaited(_persistTodoListPath(boardFilePath, existing));
+        return;
+      } on FileSystemException {
+        // Try next candidate.
+        continue;
+      }
     }
 
-    final text = File(existing).readAsStringSync();
-    final parsed = _todoStore.parse(text: text, cardId: _draft.id);
-
-    setState(() {
-      _todoListPath = existing;
-      _todoItems = parsed.currentCardItems;
-      _otherTodoLines = parsed.otherLines;
-    });
+    if (mounted) {
+      _todoListPath = null;
+      _todoItems = <TodoListEntry>[];
+      _otherTodoLines = <String>[];
+    }
   }
 
-  void _createTodoList() {
+  Future<void> _createTodoList() async {
     final boardFilePath = widget.boardFilePath;
     if (boardFilePath == null) {
       return;
     }
 
-    final path = _todoStore.defaultTodoListPath(boardFilePath: boardFilePath);
-    _todoStore.createTodoListIfNeeded(path);
+    String path;
+    if (Platform.isMacOS) {
+      final selectedPath = await _pickTodoListPath(boardFilePath);
+      if (selectedPath == null || selectedPath.trim().isEmpty) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Todo list creation cancelled.')),
+        );
+        return;
+      }
+      path = selectedPath;
+    } else {
+      path = _todoStore.defaultTodoListPath(boardFilePath: boardFilePath);
+    }
+
+    try {
+      _todoStore.createTodoListIfNeeded(path);
+    } on FileSystemException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      final reason = error.osError?.message ?? error.message;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cannot create todo list: $reason'),
+        ),
+      );
+      return;
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot create todo list in the selected location.'),
+        ),
+      );
+      return;
+    }
+    unawaited(_rememberPathAccess(path));
+    unawaited(_persistTodoListPath(boardFilePath, path));
 
     setState(() {
       _todoListPath = path;
@@ -678,6 +747,33 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       _otherTodoLines = <String>[];
       _saveTodoList();
     });
+  }
+
+  Future<String?> _pickTodoListPath(String boardFilePath) async {
+    final boardFile = File(boardFilePath);
+    final boardName = boardFile.uri.pathSegments.isEmpty
+        ? 'Board'
+        : boardFile.uri.pathSegments.last;
+    final dot = boardName.lastIndexOf('.');
+    final stem = dot > 0 ? boardName.substring(0, dot) : boardName;
+    final suggested = '$stem.todo.txt';
+    if (Platform.isMacOS) {
+      try {
+        final nativePath = await _nativeDialogsChannel.invokeMethod<String>(
+          'saveTodoList',
+          <String, Object?>{'suggestedName': suggested},
+        );
+        if (nativePath == null || nativePath.trim().isEmpty) {
+          return null;
+        }
+        return nativePath.trim();
+      } on PlatformException {
+        return null;
+      }
+    }
+
+    final location = await getSaveLocation(suggestedName: suggested);
+    return location?.path;
   }
 
   void _addTodo() {
@@ -699,16 +795,71 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       return;
     }
 
-    _todoStore.saveTodoList(
-      todoListPath: path,
-      currentCardItems: _todoItems,
-      otherLines: _otherTodoLines,
-      cardId: _draft.id,
-      columnContext: widget.columnTitle == null
-          ? null
-          : _normalizeTag(widget.columnTitle!),
+    try {
+      _todoStore.saveTodoList(
+        todoListPath: path,
+        currentCardItems: _todoItems,
+        otherLines: _otherTodoLines,
+        cardId: _draft.id,
+        columnContext: widget.columnTitle == null
+            ? null
+            : _normalizeTag(widget.columnTitle!),
+      );
+      unawaited(_rememberPathAccess(path));
+      final boardFilePath = widget.boardFilePath;
+      if (boardFilePath != null) {
+        unawaited(_persistTodoListPath(boardFilePath, path));
+      }
+    } on FileSystemException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      final reason = error.osError?.message ?? error.message;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save todo list: $reason')),
+      );
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save todo list file.')),
+      );
+    }
+  }
+
+  Future<void> _rememberPathAccess(String path) async {
+    if (!Platform.isMacOS || path.trim().isEmpty) {
+      return;
+    }
+    try {
+      await _nativeDialogsChannel.invokeMethod<void>(
+        'rememberPathAccess',
+        <String, Object?>{'path': path},
+      );
+    } on PlatformException {
+      // Non-fatal; UI remains usable in current session.
+    }
+  }
+
+  String _todoPathPrefsKey(String boardFilePath) {
+    final normalized = File(boardFilePath).absolute.path;
+    return 'kanoli.todo.path.v1::$normalized';
+  }
+
+  Future<void> _persistTodoListPath(String boardFilePath, String todoPath) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _todoPathPrefsKey(boardFilePath),
+      File(todoPath).absolute.path,
     );
   }
+
+  Future<String?> _storedTodoListPath(String boardFilePath) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_todoPathPrefsKey(boardFilePath));
+  }
+
 }
 
 class _LabelMatch {

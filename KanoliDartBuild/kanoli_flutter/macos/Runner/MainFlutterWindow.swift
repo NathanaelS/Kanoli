@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 
 class MainFlutterWindow: NSWindow {
   private var nativeDialogsChannel: FlutterMethodChannel?
+  private var activeSecurityScopedUrls: [URL] = []
+  private let bookmarkStoreKey = "kanoli.securityScopedBookmarks.v1"
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -13,6 +15,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     setupNativeDialogsChannel(with: flutterViewController)
+    restoreSecurityScopedBookmarks()
     self.delegate = self
 
     super.awakeFromNib()
@@ -44,11 +47,19 @@ class MainFlutterWindow: NSWindow {
     case "saveBoard":
       let args = call.arguments as? [String: Any]
       let suggestedName = args?["suggestedName"] as? String ?? "KanoliBoard.md"
-      presentSavePanel(suggestedName: suggestedName, result: result)
+      presentSavePanel(suggestedName: suggestedName, extensions: ["md"], result: result)
+    case "saveTodoList":
+      let args = call.arguments as? [String: Any]
+      let suggestedName = args?["suggestedName"] as? String ?? "KanoliBoard.todo.txt"
+      presentSavePanel(suggestedName: suggestedName, extensions: ["txt"], result: result)
     case "hideWindow":
       hideWindow(result: result)
     case "showWindow":
       showWindow(result: result)
+    case "rememberPathAccess":
+      let args = call.arguments as? [String: Any]
+      let path = args?["path"] as? String ?? ""
+      rememberPathAccess(path: path, result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -72,17 +83,24 @@ class MainFlutterWindow: NSWindow {
         return
       }
       let path = panel.url?.path
+      if let selectedUrl = panel.url {
+        self.rememberSecurityScopedAccess(for: selectedUrl)
+      }
       self.debugLog("openPanel selectedPath=\(path ?? "<nil>")")
       result(path)
     }
   }
 
-  private func presentSavePanel(suggestedName: String, result: @escaping FlutterResult) {
+  private func presentSavePanel(
+    suggestedName: String,
+    extensions: [String],
+    result: @escaping FlutterResult
+  ) {
     DispatchQueue.main.async {
       let panel = NSSavePanel()
       panel.canCreateDirectories = true
       panel.nameFieldStringValue = suggestedName
-      self.applyAllowedTypes(panel: panel, extensions: ["md"])
+      self.applyAllowedTypes(panel: panel, extensions: extensions)
       panel.isExtensionHidden = false
       NSApp.activate(ignoringOtherApps: true)
       self.makeKeyAndOrderFront(nil)
@@ -95,9 +113,16 @@ class MainFlutterWindow: NSWindow {
         result(nil)
         return
       }
-      let path = panel.url?.path
-      self.debugLog("savePanel selectedPath=\(path ?? "<nil>")")
-      result(path)
+      guard let selectedUrl = panel.url else {
+        self.debugLog("savePanel selectedPath=<nil>")
+        result(nil)
+        return
+      }
+
+      let normalizedUrl = self.normalizedSaveURL(from: selectedUrl, preferredExtensions: extensions)
+      self.rememberSecurityScopedAccessForSaveTarget(normalizedUrl)
+      self.debugLog("savePanel selectedPath=\(normalizedUrl.path)")
+      result(normalizedUrl.path)
     }
   }
 
@@ -116,6 +141,24 @@ class MainFlutterWindow: NSWindow {
     }
   }
 
+  private func rememberPathAccess(path: String, result: @escaping FlutterResult) {
+    DispatchQueue.main.async {
+      let normalizedPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !normalizedPath.isEmpty else {
+        result(nil)
+        return
+      }
+
+      let url = URL(fileURLWithPath: normalizedPath)
+      if FileManager.default.fileExists(atPath: url.path) {
+        self.rememberSecurityScopedAccess(for: url)
+      } else {
+        self.rememberSecurityScopedAccessForSaveTarget(url)
+      }
+      result(nil)
+    }
+  }
+
   private func debugLog(_ message: String) {
     NSLog("[KanoliDialog] %@", message)
   }
@@ -129,6 +172,100 @@ class MainFlutterWindow: NSWindow {
       }
     }
     panel.allowedFileTypes = extensions
+  }
+
+  private func normalizedSaveURL(from url: URL, preferredExtensions: [String]) -> URL {
+    if url.pathExtension.isEmpty, let first = preferredExtensions.first, !first.isEmpty {
+      return url.appendingPathExtension(first)
+    }
+    return url
+  }
+
+  private func restoreSecurityScopedBookmarks() {
+    guard let stored = UserDefaults.standard.dictionary(forKey: bookmarkStoreKey) as? [String: Data] else {
+      return
+    }
+
+    var updated = stored
+    var restoredCount = 0
+    for (path, bookmarkData) in stored {
+      var isStale = false
+      do {
+        let url = try URL(
+          resolvingBookmarkData: bookmarkData,
+          options: [.withSecurityScope],
+          relativeTo: nil,
+          bookmarkDataIsStale: &isStale
+        )
+        if url.startAccessingSecurityScopedResource() {
+          activeSecurityScopedUrls.append(url)
+          restoredCount += 1
+        }
+        if isStale {
+          let refreshed = try url.bookmarkData(
+            options: [.withSecurityScope],
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+          )
+          updated[path] = refreshed
+        }
+      } catch {
+        updated.removeValue(forKey: path)
+        debugLog("bookmark restore failed path=\(path) error=\(error.localizedDescription)")
+      }
+    }
+
+    UserDefaults.standard.set(updated, forKey: bookmarkStoreKey)
+    debugLog("bookmark restore count=\(restoredCount)")
+  }
+
+  private func rememberSecurityScopedAccess(for url: URL) {
+    let didStart = url.startAccessingSecurityScopedResource()
+    if didStart {
+      activeSecurityScopedUrls.append(url)
+    }
+
+    do {
+      let bookmark = try url.bookmarkData(
+        options: [.withSecurityScope],
+        includingResourceValuesForKeys: nil,
+        relativeTo: nil
+      )
+      var bookmarks = UserDefaults.standard.dictionary(forKey: bookmarkStoreKey) as? [String: Data] ?? [:]
+      bookmarks[url.path] = bookmark
+      UserDefaults.standard.set(bookmarks, forKey: bookmarkStoreKey)
+      debugLog("bookmark saved path=\(url.path)")
+    } catch {
+      debugLog("bookmark save failed path=\(url.path) error=\(error.localizedDescription)")
+    }
+  }
+
+  private func rememberSecurityScopedAccessForSaveTarget(_ fileUrl: URL) {
+    if FileManager.default.fileExists(atPath: fileUrl.path) {
+      rememberSecurityScopedAccess(for: fileUrl)
+      return
+    }
+
+    let directoryUrl = fileUrl.deletingLastPathComponent()
+    rememberSecurityScopedAccess(for: directoryUrl)
+    debugLog("savePanel bookmark used parent directory=\(directoryUrl.path)")
+    retryBookmarkForCreatedFile(fileUrl, attemptsRemaining: 20)
+  }
+
+  private func retryBookmarkForCreatedFile(_ fileUrl: URL, attemptsRemaining: Int) {
+    guard attemptsRemaining > 0 else {
+      debugLog("savePanel bookmark retry exhausted path=\(fileUrl.path)")
+      return
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+      if FileManager.default.fileExists(atPath: fileUrl.path) {
+        self.rememberSecurityScopedAccess(for: fileUrl)
+        self.debugLog("savePanel bookmark retry succeeded path=\(fileUrl.path)")
+        return
+      }
+      self.retryBookmarkForCreatedFile(fileUrl, attemptsRemaining: attemptsRemaining - 1)
+    }
   }
 
   private func focusSavePanelNameField(retryCount: Int) {

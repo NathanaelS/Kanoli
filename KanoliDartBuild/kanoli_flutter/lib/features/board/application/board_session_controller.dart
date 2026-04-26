@@ -52,7 +52,12 @@ class BoardSessionController extends ChangeNotifier {
 
   BoardFilter _boardFilter = BoardFilter();
   bool _showArchiveOnly = false;
+  bool _rememberSessionOnLaunch = true;
   SharedPreferences? _prefs;
+  static const String _sessionKey = 'kanoli.session.v1';
+  static const String _rememberSessionKey = 'kanoli.session.remember.v1';
+  static const String _rememberSessionTouchedKey =
+      'kanoli.session.remember.touched.v1';
 
   UnmodifiableListView<BoardTabState> get boardTabs =>
       UnmodifiableListView<BoardTabState>(_boardTabs);
@@ -64,6 +69,7 @@ class BoardSessionController extends ChangeNotifier {
 
   BoardFilter get boardFilter => _boardFilter;
   bool get showArchiveOnly => _showArchiveOnly;
+  bool get rememberSessionOnLaunch => _rememberSessionOnLaunch;
 
   bool get hasActiveBoard => activeBoardPath != null;
   bool get isFilterActive => _boardFilter.isActive;
@@ -74,8 +80,25 @@ class BoardSessionController extends ChangeNotifier {
 
   Future<void> restoreSessionIfAvailable() async {
     _prefs ??= await SharedPreferences.getInstance();
+    final rememberTouched =
+        _prefs!.getBool(_rememberSessionTouchedKey) ?? false;
+    final storedRemember = _prefs!.getBool(_rememberSessionKey);
+    if (!rememberTouched && storedRemember == false) {
+      _rememberSessionOnLaunch = true;
+      await _prefs!.setBool(_rememberSessionKey, true);
+      logger.warning(
+        'rememberSessionPreferenceMigrated',
+        <String, Object?>{'from': false, 'to': true},
+      );
+    } else {
+      _rememberSessionOnLaunch = storedRemember ?? true;
+    }
 
-    final raw = _prefs!.getString('kanoli.session.v1');
+    if (!_rememberSessionOnLaunch) {
+      return;
+    }
+
+    final raw = _prefs!.getString(_sessionKey);
     if (raw == null || raw.isEmpty) {
       return;
     }
@@ -108,7 +131,7 @@ class BoardSessionController extends ChangeNotifier {
         _boardTabs.clear();
         _columns = <BoardColumn>[];
         _selectedTabId = null;
-        await _prefs!.remove('kanoli.session.v1');
+        await _prefs!.remove(_sessionKey);
         return;
       }
 
@@ -281,7 +304,7 @@ class BoardSessionController extends ChangeNotifier {
     _clearError();
     _columns = loadResult.columns;
     _upsertTab(normalizedPath);
-    unawaited(_persistSessionState());
+    await _persistSessionState();
     logger.info('openBoard', <String, Object?>{'path': normalizedPath});
     notifyListeners();
   }
@@ -478,11 +501,6 @@ class BoardSessionController extends ChangeNotifier {
     }
 
     final destinationItems = _columns[destinationColumnIndex].items;
-    final destinationOriginalIndex = destinationItemId == null
-        ? null
-        : destinationItems.indexWhere(
-            (BoardItem item) => item.id == destinationItemId,
-          );
 
     final item = _columns[source.columnIndex].items.removeAt(source.itemIndex);
 
@@ -496,13 +514,7 @@ class BoardSessionController extends ChangeNotifier {
       if (targetIndex < 0) {
         insertionIndex = destinationItems.length;
       } else {
-        final movingDownWithinColumn =
-            source.columnIndex == destinationColumnIndex &&
-            destinationOriginalIndex != null &&
-            source.itemIndex < destinationOriginalIndex;
-        insertionIndex = movingDownWithinColumn
-            ? (targetIndex + 1)
-            : targetIndex;
+        insertionIndex = targetIndex;
       }
     }
 
@@ -668,6 +680,29 @@ class BoardSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setRememberSessionOnLaunch(bool value) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    _rememberSessionOnLaunch = value;
+    await _prefs!.setBool(_rememberSessionKey, value);
+    await _prefs!.setBool(_rememberSessionTouchedKey, true);
+    if (!value) {
+      await _prefs!.remove(_sessionKey);
+    } else {
+      await _persistSessionState();
+    }
+    logger.info('setRememberSessionOnLaunch', <String, Object?>{
+      'enabled': value,
+    });
+    notifyListeners();
+  }
+
+  Future<void> clearRememberedSessionData() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.remove(_sessionKey);
+    logger.info('clearRememberedSessionData');
+    notifyListeners();
+  }
+
   void clearError() {
     if (_lastError == null) {
       return;
@@ -764,12 +799,17 @@ class BoardSessionController extends ChangeNotifier {
   Future<void> _persistSessionState() async {
     _prefs ??= await SharedPreferences.getInstance();
 
+    if (!_rememberSessionOnLaunch) {
+      await _prefs!.remove(_sessionKey);
+      return;
+    }
+
     final payload = <String, Object?>{
       'tabs': _boardTabs.map((BoardTabState tab) => tab.path).toList(),
       'selectedPath': activeBoardPath,
     };
 
-    await _prefs!.setString('kanoli.session.v1', jsonEncode(payload));
+    await _prefs!.setString(_sessionKey, jsonEncode(payload));
   }
 }
 

@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/config/app_environment.dart';
+import '../../../core/files/board_file_access_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/board/board_entities.dart';
 import '../application/board_session_controller.dart';
@@ -17,10 +17,12 @@ class BoardWorkspacePage extends StatefulWidget {
     super.key,
     required this.environment,
     required this.controller,
+    required this.fileAccessService,
   });
 
   final AppEnvironment environment;
   final BoardSessionController controller;
+  final BoardFileAccessService fileAccessService;
 
   @override
   State<BoardWorkspacePage> createState() => _BoardWorkspacePageState();
@@ -109,6 +111,11 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                     ? _closeSelectedTab
                     : null,
                 icon: const Icon(Icons.close),
+              ),
+              IconButton(
+                tooltip: 'Privacy Settings',
+                onPressed: _openPrivacySettings,
+                icon: const Icon(Icons.settings),
               ),
               const SizedBox(width: 8),
             ],
@@ -238,6 +245,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 PlatformMenuItem(
                   label: 'Import Trello JSON',
                   onSelected: () => unawaited(_importBoard()),
+                ),
+                PlatformMenuItem(
+                  label: 'Privacy Settings',
+                  onSelected: () => unawaited(_openPrivacySettings()),
                 ),
                 PlatformMenuItem(
                   label: 'Close Active Board',
@@ -590,30 +601,49 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: <Widget>[
-                    if (!widget.controller.isFilterActive)
-                      _columnDropTarget(column: column, destinationItemId: null),
-                    ...column.items.map((BoardItem item) {
-                      return Column(
+              child: (!widget.controller.isFilterActive && column.items.isEmpty)
+                  ? _emptyColumnDropTarget(column: column)
+                  : SingleChildScrollView(
+                      child: Column(
                         children: <Widget>[
-                          _itemTile(
-                            item: item,
-                            sourceColumn: column,
-                            visuals: visuals,
-                          ),
                           if (!widget.controller.isFilterActive)
-                            _columnDropTarget(
-                              column: column,
-                              destinationItemId: item.id,
-                            ),
+                            for (
+                              var index = 0;
+                              index <= column.items.length;
+                              index++
+                            )
+                              Column(
+                                children: <Widget>[
+                                  _columnDropTarget(
+                                    column: column,
+                                    destinationItemId: index <
+                                            column.items.length
+                                        ? column.items[index].id
+                                        : null,
+                                  ),
+                                  if (index < column.items.length)
+                                    _itemDropTarget(
+                                      column: column,
+                                      destinationItemId: column.items[index].id,
+                                      child: _itemTile(
+                                        item: column.items[index],
+                                        sourceColumn: column,
+                                        visuals: visuals,
+                                      ),
+                                    ),
+                                ],
+                              )
+                          else
+                            ...column.items.map((BoardItem item) {
+                              return _itemTile(
+                                item: item,
+                                sourceColumn: column,
+                                visuals: visuals,
+                              );
+                            }),
                         ],
-                      );
-                    }),
-                  ],
-                ),
-              ),
+                      ),
+                    ),
             ),
             if (!widget.controller.isFilterActive) ...<Widget>[
               const SizedBox(height: 4),
@@ -702,20 +732,34 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       return Padding(padding: const EdgeInsets.only(bottom: 8), child: tile);
     }
 
+    final payload = _DragItemPayload(
+      itemId: item.id,
+      sourceColumnId: sourceColumn.id,
+    );
+    final feedback = Material(
+      color: Colors.transparent,
+      child: SizedBox(width: 280, child: tile),
+    );
+    final useImmediateDesktopDrag =
+        Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: LongPressDraggable<_DragItemPayload>(
-        data: _DragItemPayload(
-          itemId: item.id,
-          sourceColumnId: sourceColumn.id,
-        ),
-        feedback: Material(
-          color: Colors.transparent,
-          child: SizedBox(width: 280, child: tile),
-        ),
-        childWhenDragging: Opacity(opacity: 0.35, child: tile),
-        child: tile,
-      ),
+      child: useImmediateDesktopDrag
+          ? Draggable<_DragItemPayload>(
+              data: payload,
+              feedback: feedback,
+              maxSimultaneousDrags: 1,
+              childWhenDragging: Opacity(opacity: 0.35, child: tile),
+              child: tile,
+            )
+          : LongPressDraggable<_DragItemPayload>(
+              data: payload,
+              feedback: feedback,
+              maxSimultaneousDrags: 1,
+              childWhenDragging: Opacity(opacity: 0.35, child: tile),
+              child: tile,
+            ),
     );
   }
 
@@ -725,7 +769,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }) {
     return DragTarget<_DragItemPayload>(
       onWillAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
-        return details.data.itemId.isNotEmpty;
+        if (details.data.itemId.isEmpty) {
+          return false;
+        }
+        return details.data.itemId != destinationItemId;
       },
       onAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
         widget.controller.moveItemBefore(
@@ -745,14 +792,135 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               duration: const Duration(milliseconds: 120),
               curve: Curves.easeInOut,
               margin: const EdgeInsets.only(bottom: 8),
-              height: isActive ? 16 : 8,
+              height: isActive ? 24 : 12,
               decoration: BoxDecoration(
-                color: isActive ? const Color(0x6654C59F) : Colors.transparent,
+                color: isActive ? const Color(0x8854C59F) : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: isActive
                     ? Border.all(color: const Color(0xAA54C59F))
                     : null,
               ),
+            );
+          },
+    );
+  }
+
+  Widget _emptyColumnDropTarget({required BoardColumn column}) {
+    return DragTarget<_DragItemPayload>(
+      onWillAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
+        return details.data.itemId.isNotEmpty;
+      },
+      onAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
+        widget.controller.moveItemBefore(
+          itemId: details.data.itemId,
+          destinationColumnId: column.id,
+        );
+      },
+      builder:
+          (
+            BuildContext context,
+            List<_DragItemPayload?> candidateData,
+            List<dynamic> rejectedData,
+          ) {
+            final isActive = candidateData.isNotEmpty;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeInOut,
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: isActive ? const Color(0x3354C59F) : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isActive
+                      ? const Color(0xCC54C59F)
+                      : const Color(0x3354C59F),
+                  width: isActive ? 2 : 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  isActive ? 'Drop Item Here' : 'Drag Item Into This Column',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isActive
+                        ? const Color(0xFF8DE0C8)
+                        : AppTheme.muted,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            );
+          },
+    );
+  }
+
+  Widget _itemDropTarget({
+    required BoardColumn column,
+    required String destinationItemId,
+    required Widget child,
+  }) {
+    return DragTarget<_DragItemPayload>(
+      onWillAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
+        return details.data.itemId.isNotEmpty &&
+            details.data.itemId != destinationItemId;
+      },
+      onAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
+        widget.controller.moveItemBefore(
+          itemId: details.data.itemId,
+          destinationColumnId: column.id,
+          destinationItemId: destinationItemId,
+        );
+      },
+      builder:
+          (
+            BuildContext context,
+            List<_DragItemPayload?> candidateData,
+            List<dynamic> rejectedData,
+          ) {
+            final isActive = candidateData.isNotEmpty;
+            return Column(
+              children: <Widget>[
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  curve: Curves.easeInOut,
+                  height: isActive ? 8 : 0,
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF54C59F),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: isActive
+                        ? const <BoxShadow>[
+                            BoxShadow(
+                              color: Color(0x8854C59F),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+                AnimatedSlide(
+                  duration: const Duration(milliseconds: 100),
+                  curve: Curves.easeInOut,
+                  offset: isActive ? const Offset(0, 0.08) : Offset.zero,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    curve: Curves.easeInOut,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: isActive
+                          ? Border.all(
+                              color: const Color(0xCC54C59F),
+                              width: 2,
+                            )
+                          : null,
+                      color: isActive ? const Color(0x2254C59F) : null,
+                    ),
+                    child: child,
+                  ),
+                ),
+              ],
             );
           },
     );
@@ -907,9 +1075,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         'platform': 'macos',
       });
       try {
-        final nativePath = await _chooseFileViaNativeDialog(
-          method: 'openBoard',
-        );
+        final nativePath = await widget.fileAccessService.pickOpenBoardPath();
         if (nativePath == null || nativePath.trim().isEmpty) {
           widget.controller.logger.warning(
             'openBoardUiCancelled',
@@ -936,16 +1102,12 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     try {
-      final file = await openFile(
-        acceptedTypeGroups: const <XTypeGroup>[
-          XTypeGroup(label: 'Board Files', extensions: <String>['md', 'txt']),
-        ],
-      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
-      if (file == null) {
+      final path = await widget.fileAccessService.pickOpenBoardPath();
+      if (path == null || path.trim().isEmpty) {
         await _openBoardViaPathPrompt();
         return;
       }
-      await widget.controller.openBoard(file.path);
+      await widget.controller.openBoard(path);
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'openBoardUiFailure',
@@ -993,7 +1155,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         'platform': 'macos',
       });
       try {
-        final nativePath = await _chooseSaveViaNativeDialog(
+        final nativePath = await widget.fileAccessService.pickCreateBoardPath(
           suggestedName: 'KanoliBoard.md',
         );
         if (nativePath != null && nativePath.trim().isNotEmpty) {
@@ -1018,17 +1180,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     try {
-      final saveLocation = await getSaveLocation(
+      final savePath = await widget.fileAccessService.pickCreateBoardPath(
         suggestedName: 'KanoliBoard.md',
-      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
-      if (saveLocation == null) {
+      );
+      if (savePath == null || savePath.trim().isEmpty) {
         await _createBoardViaPathPrompt('KanoliBoard.md');
         return;
       }
 
-      await widget.controller.createBoard(
-        _normalizeMarkdownPath(saveLocation.path),
-      );
+      await widget.controller.createBoard(_normalizeMarkdownPath(savePath));
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'createBoardUiFailure',
@@ -1052,14 +1212,16 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         'platform': 'macos',
       });
       try {
-        final jsonPath = await _chooseFileViaNativeDialog(method: 'openJson');
-        if (jsonPath == null || jsonPath.trim().isEmpty) {
+        final selection = await widget.fileAccessService
+            .pickImportBoardSelection(suggestedBoardName: 'ImportedBoard.md');
+        if (selection == null) {
           widget.controller.logger.warning(
             'importBoardUiCancelled',
             <String, Object?>{'source': 'native_open'},
           );
           return;
         }
+        final jsonPath = selection.jsonPath;
         if (!_isJsonPath(jsonPath)) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1074,29 +1236,17 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           );
           return;
         }
-        final jsonFile = XFile(jsonPath);
-
         widget.controller.logger.info(
           'importBoardUiSelectedJson',
-          <String, Object?>{'path': jsonFile.path, 'source': 'native_open'},
+          <String, Object?>{'path': jsonPath, 'source': 'native_open'},
         );
-        final suggested = '${_baseNameWithoutExtension(jsonFile.name)}.md';
-        final savePath = await _chooseSaveViaNativeDialog(
-          suggestedName: suggested,
-        );
-        if (savePath == null || savePath.trim().isEmpty) {
-          widget.controller.logger.warning(
-            'importBoardUiCancelled',
-            <String, Object?>{'source': 'native_save'},
-          );
-          return;
-        }
+        final savePath = selection.boardPath;
         widget.controller.logger.info(
           'importBoardUiSelectedSavePath',
           <String, Object?>{'path': savePath},
         );
         await widget.controller.importJsonBoard(
-          jsonPath: jsonFile.path,
+          jsonPath: jsonPath,
           boardPath: _normalizeMarkdownPath(savePath),
         );
       } on Object catch (error, stackTrace) {
@@ -1113,33 +1263,16 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     try {
-      final jsonFile = await openFile(
-        acceptedTypeGroups: const <XTypeGroup>[
-          XTypeGroup(
-            label: 'JSON',
-            extensions: <String>['json'],
-            mimeTypes: <String>['application/json', 'text/json'],
-            uniformTypeIdentifiers: <String>['public.json'],
-          ),
-        ],
-      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
-      if (jsonFile == null) {
+      final selection = await widget.fileAccessService.pickImportBoardSelection(
+        suggestedBoardName: 'ImportedBoard.md',
+      );
+      if (selection == null) {
         await _importBoardViaPathPrompt();
         return;
       }
-
-      final suggested = '${_baseNameWithoutExtension(jsonFile.name)}.md';
-      final saveLocation = await getSaveLocation(
-        suggestedName: suggested,
-      ).timeout(const Duration(seconds: 2), onTimeout: () => null);
-      if (saveLocation == null) {
-        await _importBoardViaPathPrompt();
-        return;
-      }
-
       await widget.controller.importJsonBoard(
-        jsonPath: jsonFile.path,
-        boardPath: _normalizeMarkdownPath(saveLocation.path),
+        jsonPath: selection.jsonPath,
+        boardPath: _normalizeMarkdownPath(selection.boardPath),
       );
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
@@ -1253,6 +1386,65 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         .toList();
 
     widget.controller.setBoardFilter(dueDateRule: selectedRule, labels: labels);
+  }
+
+  Future<void> _openPrivacySettings() async {
+    if (!mounted) {
+      return;
+    }
+
+    var remember = widget.controller.rememberSessionOnLaunch;
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Privacy Settings'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  SwitchListTile(
+                    value: remember,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Remember open boards on launch'),
+                    onChanged: (bool value) async {
+                      setState(() {
+                        remember = value;
+                      });
+                      await widget.controller.setRememberSessionOnLaunch(value);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        await widget.controller.clearRememberedSessionData();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Remembered session data cleared.'),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Clear Remembered Session Data'),
+                    ),
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Done'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _addColumn() async {
@@ -1430,11 +1622,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
   }
 
-  String _baseNameWithoutExtension(String filename) {
-    final dot = filename.lastIndexOf('.');
-    return dot > 0 ? filename.substring(0, dot) : filename;
-  }
-
   String _normalizeMarkdownPath(String path) {
     if (path.toLowerCase().endsWith('.md')) {
       return path;
@@ -1444,38 +1631,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   bool _isJsonPath(String path) {
     return path.toLowerCase().endsWith('.json');
-  }
-
-  Future<String?> _chooseSaveViaNativeDialog({
-    required String suggestedName,
-  }) async {
-    try {
-      final path = await _nativeDialogsChannel
-          .invokeMethod<String>('saveBoard', <String, Object?>{
-            'suggestedName': suggestedName,
-          })
-          .timeout(const Duration(seconds: 30), onTimeout: () => null);
-      if (path == null || path.trim().isEmpty) {
-        return null;
-      }
-      return path.trim();
-    } on PlatformException {
-      return null;
-    }
-  }
-
-  Future<String?> _chooseFileViaNativeDialog({required String method}) async {
-    try {
-      final path = await _nativeDialogsChannel
-          .invokeMethod<String>(method)
-          .timeout(const Duration(seconds: 30), onTimeout: () => null);
-      if (path == null || path.trim().isEmpty) {
-        return null;
-      }
-      return path.trim();
-    } on PlatformException {
-      return null;
-    }
   }
 
   Future<void> _openBoardViaPathPrompt() async {

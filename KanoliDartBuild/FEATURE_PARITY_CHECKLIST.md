@@ -86,16 +86,15 @@ Status legend:
 
 ## Platform and File Access
 
-- [~] macOS file picker workflows
+- [x] macOS file picker workflows
 - [~] iOS file picker workflows
 - [~] Windows/Linux/Android file workflows
-- [ ] Persisted file permissions/handles strategy validated per OS
+- [~] Persisted file permissions/handles strategy validated per OS
 
 ## Quality
 
 - [x] Ported unit tests for parser and serialization parity
 - [x] Added regression tests for legacy formats
 - [x] Widget tests for critical flows
-- [ ] Smoke tests on all 5 target OSes
+- [~] Smoke tests on all 5 target OSes
 - [~] Parity sign-off pass against Swift app behavior
-
