@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 
 import '../config/app_environment.dart';
+import '../diagnostics/diagnostics_store.dart';
 
 class AppLogger {
-  AppLogger({required this.environment});
+  AppLogger({required this.environment, DiagnosticsStore? diagnosticsStore})
+    : _diagnosticsStore = diagnosticsStore ?? DiagnosticsStore.instance;
 
   final AppEnvironment environment;
+  final DiagnosticsStore _diagnosticsStore;
 
   void info(
     String event, [
@@ -45,8 +48,9 @@ class AppLogger {
         .map((MapEntry<String, Object?> entry) => '${entry.key}=${entry.value}')
         .join(' ');
 
-    debugPrint(
-      '[Kanoli][$level][${environment.name}] $event ${values.trim()}'.trim(),
-    );
+    final line = '[Kanoli][$level][${environment.name}] $event ${values.trim()}'
+        .trim();
+    debugPrint(line);
+    _diagnosticsStore.record(line);
   }
 }

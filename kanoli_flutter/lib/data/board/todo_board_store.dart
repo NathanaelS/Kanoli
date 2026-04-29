@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../../domain/board/board_entities.dart';
+import 'safe_file_store.dart';
 
 class TodoBoardParseResult {
   TodoBoardParseResult({
@@ -13,6 +14,11 @@ class TodoBoardParseResult {
 }
 
 class TodoBoardStore {
+  TodoBoardStore({SafeFileStore? safeFileStore})
+    : _safeFileStore = safeFileStore ?? SafeFileStore();
+
+  final SafeFileStore _safeFileStore;
+
   String defaultTodoListPath({required String boardFilePath}) {
     final boardFile = File(boardFilePath);
     final directory = boardFile.parent.path;
@@ -27,10 +33,7 @@ class TodoBoardStore {
   }
 
   void createTodoListIfNeeded(String todoListPath) {
-    final file = File(todoListPath);
-    if (!file.existsSync()) {
-      file.writeAsStringSync('');
-    }
+    _safeFileStore.writeEmptyFileIfMissing(todoListPath);
   }
 
   String todoListPath({
@@ -122,14 +125,11 @@ class TodoBoardStore {
       columnContext: columnContext,
     );
 
-    File(todoListPath).writeAsStringSync(serialized);
+    _safeFileStore.writeTextAtomic(targetPath: todoListPath, content: serialized);
   }
 
   void deleteTodoList(String todoListPath) {
-    final file = File(todoListPath);
-    if (file.existsSync()) {
-      file.deleteSync();
-    }
+    _safeFileStore.deleteFile(todoListPath);
   }
 
   String _serializedBoardTodoLine(

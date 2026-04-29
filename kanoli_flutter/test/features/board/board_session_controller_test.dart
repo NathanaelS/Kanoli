@@ -70,6 +70,43 @@ void main() {
     expect(colB.items.map((BoardItem i) => i.id), <String>['item-2', 'item-3']);
   });
 
+  test('moves item within same column to exactly before destination', () async {
+    final boardPath = _tempPath('_within.md');
+    markdownStore.save(
+      filePath: boardPath,
+      columns: <BoardColumn>[
+        BoardColumn(
+          id: 'col-a',
+          title: 'A',
+          items: <BoardItem>[
+            BoardItem(id: 'item-1', title: 'One'),
+            BoardItem(id: 'item-2', title: 'Two'),
+            BoardItem(id: 'item-3', title: 'Three'),
+            BoardItem(id: 'item-4', title: 'Four'),
+          ],
+        ),
+      ],
+    );
+
+    final controller = BoardSessionController(logger: logger);
+    await controller.openBoard(boardPath);
+    final colAId = controller.columns.first.id;
+
+    controller.moveItemBefore(
+      itemId: 'item-1',
+      destinationColumnId: colAId,
+      destinationItemId: 'item-3',
+    );
+
+    final colA = controller.columns.firstWhere(
+      (BoardColumn c) => c.id == colAId,
+    );
+    expect(
+      colA.items.map((BoardItem i) => i.id),
+      <String>['item-2', 'item-1', 'item-3', 'item-4'],
+    );
+  });
+
   test('archives item and auto-creates Archive column', () async {
     final boardPath = _tempPath('.md');
     markdownStore.save(
@@ -202,6 +239,66 @@ void main() {
       targetColumns.first.items.map((BoardItem item) => item.title),
       <String>['Source', 'Source'],
     );
+  });
+
+  test('restore session skips missing paths and keeps valid tabs', () async {
+    final keepBoard = _tempPath('_keep.md');
+    final missingBoard = _tempPath('_missing.md');
+
+    markdownStore.save(
+      filePath: keepBoard,
+      columns: <BoardColumn>[BoardColumn(title: 'Keep')],
+    );
+    markdownStore.save(
+      filePath: missingBoard,
+      columns: <BoardColumn>[BoardColumn(title: 'DeleteMe')],
+    );
+
+    final first = BoardSessionController(logger: logger);
+    await first.openBoard(keepBoard);
+    await first.openBoard(missingBoard);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    File(missingBoard).deleteSync();
+
+    final restored = BoardSessionController(logger: logger);
+    await restored.restoreSessionIfAvailable();
+
+    expect(restored.boardTabs.length, 1);
+    expect(restored.activeBoardPath, keepBoard);
+    expect(restored.columns.first.title, 'Keep');
+  });
+
+  test('importJsonBoard surfaces parse errors without crashing', () async {
+    final badJsonPath = _tempPath('_bad.json');
+    final outputBoard = _tempPath('_import_target.md');
+
+    File(badJsonPath).writeAsStringSync('{bad json');
+
+    final controller = BoardSessionController(logger: logger);
+    await controller.importJsonBoard(
+      jsonPath: badJsonPath,
+      boardPath: outputBoard,
+    );
+
+    expect(controller.lastError, isNotNull);
+    expect(controller.lastError, contains('FormatException'));
+    expect(File(outputBoard).existsSync(), isFalse);
+  });
+
+  test('openBoard returns file-not-found error for missing board path', () async {
+    final missingPath = _tempPath('_not_found.md');
+    if (File(missingPath).existsSync()) {
+      File(missingPath).deleteSync();
+    }
+
+    final controller = BoardSessionController(logger: logger);
+    await controller.openBoard(missingPath);
+
+    expect(controller.lastError, isNotNull);
+    expect(controller.lastError, contains('Unable to open file'));
+    expect(controller.lastError, contains('File not found.'));
+    expect(controller.hasActiveBoard, isFalse);
   });
 }
 

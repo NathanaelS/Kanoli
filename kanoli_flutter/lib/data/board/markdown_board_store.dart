@@ -1,11 +1,18 @@
 import 'dart:io';
 
 import '../../domain/board/board_entities.dart';
+import 'safe_file_store.dart';
 
 class MarkdownBoardStore {
+  MarkdownBoardStore({SafeFileStore? safeFileStore})
+    : _safeFileStore = safeFileStore ?? SafeFileStore();
+
+  final SafeFileStore _safeFileStore;
+
   static final RegExp _uuidPattern = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
+  static const Set<String> _supportedPriorities = <String>{'A', 'B', 'C', 'D'};
 
   BoardLoadResult loadBoard(String filePath) {
     final file = File(filePath);
@@ -29,9 +36,10 @@ class MarkdownBoardStore {
   }
 
   void save({required List<BoardColumn> columns, required String filePath}) {
-    final file = File(filePath);
-    file.parent.createSync(recursive: true);
-    file.writeAsStringSync(serialize(columns));
+    _safeFileStore.writeTextAtomic(
+      targetPath: filePath,
+      content: serialize(columns),
+    );
   }
 
   List<BoardColumn> parse(String markdown) {
@@ -188,7 +196,10 @@ class MarkdownBoardStore {
           part.length == 3 &&
           part.startsWith('(') &&
           part.endsWith(')')) {
-        priority = part.substring(1, 2);
+        final parsed = part.substring(1, 2).toUpperCase();
+        if (_supportedPriorities.contains(parsed)) {
+          priority = parsed;
+        }
       } else if (part.startsWith('+')) {
         labels.add(part.substring(1));
       } else if (part.startsWith('due:')) {

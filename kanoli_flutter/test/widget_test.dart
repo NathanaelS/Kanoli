@@ -9,6 +9,8 @@ void main() {
       KanoliApp(
         environment: AppEnvironment.dev,
         logger: AppLogger(environment: AppEnvironment.dev),
+        previousStartupIncomplete: false,
+        startupStateKey: 'test.startup.key',
       ),
     );
 

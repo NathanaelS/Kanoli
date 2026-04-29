@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/files/io_error_formatter.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../data/board/json_board_store.dart';
 import '../../../data/board/markdown_board_store.dart';
@@ -49,10 +50,17 @@ class BoardSessionController extends ChangeNotifier {
   List<BoardColumn> _columns = <BoardColumn>[];
   String? _selectedTabId;
   String? _lastError;
+  List<String> _missingSessionPaths = <String>[];
+  String? _activeTodoPath;
 
   BoardFilter _boardFilter = BoardFilter();
   bool _showArchiveOnly = false;
+  bool _rememberSessionOnLaunch = true;
   SharedPreferences? _prefs;
+  static const String _sessionKey = 'kanoli.session.v1';
+  static const String _rememberSessionKey = 'kanoli.session.remember.v1';
+  static const String _rememberSessionTouchedKey =
+      'kanoli.session.remember.touched.v1';
 
   UnmodifiableListView<BoardTabState> get boardTabs =>
       UnmodifiableListView<BoardTabState>(_boardTabs);
@@ -61,9 +69,13 @@ class BoardSessionController extends ChangeNotifier {
 
   String? get selectedTabId => _selectedTabId;
   String? get lastError => _lastError;
+  String? get activeTodoPath => _activeTodoPath;
+  UnmodifiableListView<String> get missingSessionPaths =>
+      UnmodifiableListView<String>(_missingSessionPaths);
 
   BoardFilter get boardFilter => _boardFilter;
   bool get showArchiveOnly => _showArchiveOnly;
+  bool get rememberSessionOnLaunch => _rememberSessionOnLaunch;
 
   bool get hasActiveBoard => activeBoardPath != null;
   bool get isFilterActive => _boardFilter.isActive;
@@ -74,8 +86,25 @@ class BoardSessionController extends ChangeNotifier {
 
   Future<void> restoreSessionIfAvailable() async {
     _prefs ??= await SharedPreferences.getInstance();
+    final rememberTouched =
+        _prefs!.getBool(_rememberSessionTouchedKey) ?? false;
+    final storedRemember = _prefs!.getBool(_rememberSessionKey);
+    if (!rememberTouched && storedRemember == false) {
+      _rememberSessionOnLaunch = true;
+      await _prefs!.setBool(_rememberSessionKey, true);
+      logger.warning(
+        'rememberSessionPreferenceMigrated',
+        <String, Object?>{'from': false, 'to': true},
+      );
+    } else {
+      _rememberSessionOnLaunch = storedRemember ?? true;
+    }
 
-    final raw = _prefs!.getString('kanoli.session.v1');
+    if (!_rememberSessionOnLaunch) {
+      return;
+    }
+
+    final raw = _prefs!.getString(_sessionKey);
     if (raw == null || raw.isEmpty) {
       return;
     }
@@ -86,9 +115,14 @@ class BoardSessionController extends ChangeNotifier {
         return;
       }
 
-      final tabPaths = (map['tabs'] as List<dynamic>? ?? <dynamic>[])
+      final rawTabPaths = (map['tabs'] as List<dynamic>? ?? <dynamic>[])
           .map((dynamic value) => value.toString())
+          .toList();
+      final tabPaths = rawTabPaths
           .where((String path) => File(path).existsSync())
+          .toList();
+      _missingSessionPaths = rawTabPaths
+          .where((String path) => !File(path).existsSync())
           .toList();
       final selectedPath = map['selectedPath']?.toString();
 
@@ -96,8 +130,30 @@ class BoardSessionController extends ChangeNotifier {
         return;
       }
 
-      _boardTabs.clear();
+      final loadByPath = <String, BoardLoadResult>{};
       for (final path in tabPaths) {
+        final loadResult = _markdownBoardStore.loadBoard(path);
+        if (loadResult.errorMessage == null) {
+          loadByPath[path] = loadResult;
+        }
+      }
+
+      if (loadByPath.isEmpty) {
+        _boardTabs.clear();
+        _columns = <BoardColumn>[];
+        _selectedTabId = null;
+        await _prefs!.remove(_sessionKey);
+        if (_missingSessionPaths.isNotEmpty) {
+          _setError(
+            'Some remembered boards could not be found. Use recovery to remove or replace missing paths.',
+          );
+        }
+        notifyListeners();
+        return;
+      }
+
+      _boardTabs.clear();
+      for (final path in loadByPath.keys) {
         _boardTabs.add(BoardTabState(id: IdGenerator.uuid(), path: path));
       }
 
@@ -108,9 +164,15 @@ class BoardSessionController extends ChangeNotifier {
           _boardTabs.first;
       _selectedTabId = selectedTab.id;
 
-      final loadResult = _markdownBoardStore.loadBoard(selectedTab.path);
-      if (loadResult.errorMessage == null) {
-        _columns = loadResult.columns;
+      _columns = loadByPath[selectedTab.path]!.columns;
+      await _syncActiveTodoPathForBoard(selectedTab.path);
+      if (loadByPath.length != tabPaths.length) {
+        unawaited(_persistSessionState());
+      }
+      if (_missingSessionPaths.isNotEmpty) {
+        _setError(
+          'Some remembered boards could not be found. Use recovery to remove or replace missing paths.',
+        );
       }
       notifyListeners();
     } on Object catch (error, stackTrace) {
@@ -257,7 +319,12 @@ class BoardSessionController extends ChangeNotifier {
     final loadResult = _markdownBoardStore.loadBoard(normalizedPath);
 
     if (loadResult.errorMessage != null) {
-      _setError(loadResult.errorMessage!);
+      _setError(
+        IoErrorFormatter.forOpen(
+          normalizedPath,
+          FileSystemException(loadResult.errorMessage!, normalizedPath),
+        ),
+      );
       notifyListeners();
       return;
     }
@@ -265,7 +332,8 @@ class BoardSessionController extends ChangeNotifier {
     _clearError();
     _columns = loadResult.columns;
     _upsertTab(normalizedPath);
-    unawaited(_persistSessionState());
+    await _syncActiveTodoPathForBoard(normalizedPath);
+    await _persistSessionState();
     logger.info('openBoard', <String, Object?>{'path': normalizedPath});
     notifyListeners();
   }
@@ -308,7 +376,7 @@ class BoardSessionController extends ChangeNotifier {
       );
       notifyListeners();
     } on Object catch (error, stackTrace) {
-      _setError(error.toString());
+      _setError(IoErrorFormatter.forImport(normalizedJsonPath, error));
       logger.error(
         'importJsonBoardFailed',
         error: error,
@@ -365,7 +433,7 @@ class BoardSessionController extends ChangeNotifier {
       _markdownBoardStore.save(columns: _columns, filePath: activePath);
       _clearError();
     } on Object catch (error, stackTrace) {
-      _setError(error.toString());
+      _setError(IoErrorFormatter.forSave(activePath, error));
       logger.error('persistBoardFailed', error: error, stackTrace: stackTrace);
     }
 
@@ -462,11 +530,6 @@ class BoardSessionController extends ChangeNotifier {
     }
 
     final destinationItems = _columns[destinationColumnIndex].items;
-    final destinationOriginalIndex = destinationItemId == null
-        ? null
-        : destinationItems.indexWhere(
-            (BoardItem item) => item.id == destinationItemId,
-          );
 
     final item = _columns[source.columnIndex].items.removeAt(source.itemIndex);
 
@@ -480,13 +543,7 @@ class BoardSessionController extends ChangeNotifier {
       if (targetIndex < 0) {
         insertionIndex = destinationItems.length;
       } else {
-        final movingDownWithinColumn =
-            source.columnIndex == destinationColumnIndex &&
-            destinationOriginalIndex != null &&
-            source.itemIndex < destinationOriginalIndex;
-        insertionIndex = movingDownWithinColumn
-            ? (targetIndex + 1)
-            : targetIndex;
+        insertionIndex = targetIndex;
       }
     }
 
@@ -646,10 +703,71 @@ class BoardSessionController extends ChangeNotifier {
     _selectedTabId = null;
     _boardFilter = BoardFilter();
     _showArchiveOnly = false;
+    _missingSessionPaths = <String>[];
+    _activeTodoPath = null;
     _clearError();
     unawaited(_persistSessionState());
     logger.info('clearSession');
     notifyListeners();
+  }
+
+  Future<void> setRememberSessionOnLaunch(bool value) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    _rememberSessionOnLaunch = value;
+    await _prefs!.setBool(_rememberSessionKey, value);
+    await _prefs!.setBool(_rememberSessionTouchedKey, true);
+    if (!value) {
+      await _prefs!.remove(_sessionKey);
+    } else {
+      await _persistSessionState();
+    }
+    logger.info('setRememberSessionOnLaunch', <String, Object?>{
+      'enabled': value,
+    });
+    notifyListeners();
+  }
+
+  Future<void> clearRememberedSessionData() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.remove(_sessionKey);
+    _missingSessionPaths = <String>[];
+    logger.info('clearRememberedSessionData');
+    notifyListeners();
+  }
+
+  Future<void> removeMissingSessionPath(String path) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    _missingSessionPaths = _missingSessionPaths
+        .where((String value) => value != path)
+        .toList();
+    await _rewriteSessionPaths((List<String> paths) {
+      return paths.where((String value) => value != path).toList();
+    });
+    if (_missingSessionPaths.isEmpty) {
+      _clearError();
+    }
+    notifyListeners();
+  }
+
+  Future<void> replaceMissingSessionPath({
+    required String oldPath,
+    required String newPath,
+  }) async {
+    final normalizedNewPath = File(newPath).absolute.path;
+    _prefs ??= await SharedPreferences.getInstance();
+    _missingSessionPaths = _missingSessionPaths
+        .where((String value) => value != oldPath)
+        .toList();
+    await _rewriteSessionPaths((List<String> paths) {
+      final replaced = paths
+          .map((String value) => value == oldPath ? normalizedNewPath : value)
+          .toList();
+      return replaced.toSet().toList();
+    });
+    if (_missingSessionPaths.isEmpty) {
+      _clearError();
+    }
+    await openBoard(normalizedNewPath);
   }
 
   void clearError() {
@@ -663,6 +781,11 @@ class BoardSessionController extends ChangeNotifier {
 
   void consumeError() {
     _clearError();
+  }
+
+  void setActiveTodoPath(String? path) {
+    _activeTodoPath = path?.trim().isEmpty ?? true ? null : path;
+    notifyListeners();
   }
 
   void _appendItemToBoard({
@@ -748,12 +871,60 @@ class BoardSessionController extends ChangeNotifier {
   Future<void> _persistSessionState() async {
     _prefs ??= await SharedPreferences.getInstance();
 
+    if (!_rememberSessionOnLaunch) {
+      await _prefs!.remove(_sessionKey);
+      return;
+    }
+
     final payload = <String, Object?>{
       'tabs': _boardTabs.map((BoardTabState tab) => tab.path).toList(),
       'selectedPath': activeBoardPath,
     };
 
-    await _prefs!.setString('kanoli.session.v1', jsonEncode(payload));
+    await _prefs!.setString(_sessionKey, jsonEncode(payload));
+  }
+
+  Future<void> _syncActiveTodoPathForBoard(String boardPath) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final normalizedBoardPath = File(boardPath).absolute.path;
+    final key = 'kanoli.todo.path.v1::$normalizedBoardPath';
+    final stored = _prefs!.getString(key);
+    if (stored == null || stored.trim().isEmpty) {
+      _activeTodoPath = null;
+      return;
+    }
+    final normalizedTodoPath = File(stored).absolute.path;
+    _activeTodoPath = File(normalizedTodoPath).existsSync()
+        ? normalizedTodoPath
+        : null;
+  }
+
+  Future<void> _rewriteSessionPaths(
+    List<String> Function(List<String> paths) transform,
+  ) async {
+    final raw = _prefs!.getString(_sessionKey);
+    if (raw == null || raw.isEmpty) {
+      return;
+    }
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic>) {
+      return;
+    }
+    final tabs = (decoded['tabs'] as List<dynamic>? ?? <dynamic>[])
+        .map((dynamic value) => value.toString())
+        .toList();
+    final updatedTabs = transform(tabs);
+    final selectedPath = decoded['selectedPath']?.toString();
+    final updatedSelectedPath = updatedTabs.contains(selectedPath)
+        ? selectedPath
+        : (updatedTabs.isEmpty ? null : updatedTabs.first);
+    await _prefs!.setString(
+      _sessionKey,
+      jsonEncode(<String, Object?>{
+        'tabs': updatedTabs,
+        'selectedPath': updatedSelectedPath,
+      }),
+    );
   }
 }
 
