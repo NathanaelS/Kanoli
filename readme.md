@@ -3,21 +3,29 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20iOS%20%7C%20Android-lightgrey)](#build-options)
 [![Storage](https://img.shields.io/badge/storage-Markdown%20%2B%20todo.txt-2ea44f)](#kanoli)
 [![UI](https://img.shields.io/badge/UI-Flutter%20%2F%20Dart-02569B?logo=flutter&logoColor=white)](#kanoli)
-[![Status](https://img.shields.io/badge/status-pre--release-orange)](#quick-start)
+[![Release](https://img.shields.io/badge/release-macOS%20.dmg-2ea44f)](#quick-start)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-Kanoli is a local-first, Trello-inspired kanban app that stores board data in plain Markdown and optional board-adjacent `todo.txt` files. The app was originally created in the Swift language and can be found at https://github.com/NathanaelS/KanoliSwift. This repository contains the Flutter/Dart rebuild intended to make Kanoli useable on macOS, Windows, iOS, and Android, and maybe Linux just because it's the only one left.
+<!-- CODEX DO NOT EDIT -->
+
+Kanoli is a local-first, Trello-inspired kanban app that stores board data in plain Markdown and optional `todo.txt` files. The app was originally created in the Swift language and that repo in it's current state can be found [here](https://github.com/NathanaelS/KanoliSwift). This repository contains the Flutter/Dart rebuild intended to make Kanoli useable on macOS, Windows, iOS, and Android, and probably Linux just because it's the only one left.
 
 Kanoli is the brain child of me, Nathanael Stutz, entirely vibecoded inside of Codex. I am not a software engineer and I do not claim that this app is without flaws. This app is built by me, for me, for my system, in an effort to have more of my information stored and handled locally. I am making it open source and public facing in the hopes that it can either help or inspire others.
 
-The vast majority of the documents you are about to go through are AI generated, but I have done my best to include comments where possible, and to still be the "human face" of this project.
+The vast majority of the documents you are about to go through are AI generated, but I have done my best to include comments where possible, and to still be the "human face" of this project. I have a "Vision" document available explaining workflow/thought process of the app and creation.
 
-Begin the AI paragraphs......
+And now, begin the AI paragraphs......
+
+<!-- CODEX DO NOT EDIT -->
 
 
 ## Quick Start
 
-Kanoli Dart is not distributed as a signed installer yet. Use a local Flutter toolchain:
+Kanoli Dart has a macOS `.dmg` build available for release. Download the latest `.dmg` from the GitHub Releases page when it is published, install Kanoli, and open the app normally.
+
+If macOS blocks launch, go to **System Settings > Privacy & Security** and allow Kanoli to open.
+
+To run from source instead:
 
 1. Install Flutter and platform toolchains for your target OS.
 2. Clone this repository.
@@ -51,10 +59,10 @@ Use `flutter devices` to see which targets are available on your machine.
 
 ## Current Build Status
 
-- No public Dart/Flutter release artifact is available yet.
-- The app is intended to be built locally from source.
+- A macOS `.dmg` artifact has been created and is intended for release distribution.
+- Source builds remain available for development and non-macOS targets.
 - Core board workflows are implemented in Flutter.
-- Platform-specific packaging, signing, and distribution are still pending.
+- Additional platform packaging, signing, and distribution are still pending.
 
 ## Build Options
 
