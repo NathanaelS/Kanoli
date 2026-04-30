@@ -71,7 +71,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
         final scaffold = Scaffold(
           appBar: AppBar(
-            title: const Text('Kanoli (Flutter Port)'),
+            title: const Text('Kanoli'),
             actions: <Widget>[
               IconButton(
                 tooltip: 'Create Board',
@@ -82,11 +82,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 tooltip: 'Open Board',
                 onPressed: _openBoard,
                 icon: const Icon(Icons.folder_open),
-              ),
-              IconButton(
-                tooltip: 'Import Trello JSON',
-                onPressed: _importBoard,
-                icon: const Icon(Icons.download),
               ),
               IconButton(
                 tooltip: widget.controller.isFilterActive
@@ -121,16 +116,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                     ? _closeSelectedTab
                     : null,
                 icon: const Icon(Icons.close),
-              ),
-              IconButton(
-                tooltip: 'Privacy Settings',
-                onPressed: _openPrivacySettings,
-                icon: const Icon(Icons.settings),
-              ),
-              IconButton(
-                tooltip: 'Diagnostics',
-                onPressed: _openDiagnosticsPanel,
-                icon: const Icon(Icons.bug_report_outlined),
               ),
               IconButton(
                 tooltip: 'Board Path Options',
@@ -269,24 +254,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   onSelected: () => unawaited(_importBoard()),
                 ),
                 PlatformMenuItem(
-                  label: 'Privacy Settings',
-                  onSelected: () => unawaited(_openPrivacySettings()),
-                ),
-                PlatformMenuItem(
-                  label: 'Diagnostics',
-                  onSelected: () => unawaited(_openDiagnosticsPanel()),
-                ),
-                PlatformMenuItem(
                   label: 'Close Active Board',
                   onSelected: () => unawaited(_closeSelectedTab()),
-                ),
-                PlatformMenuItem(
-                  label: 'Reveal Active Board in Finder',
-                  onSelected: () => unawaited(_revealActiveBoardInFinder()),
-                ),
-                PlatformMenuItem(
-                  label: 'Copy Active Board Path',
-                  onSelected: () => unawaited(_copyActiveBoardPath()),
                 ),
                 PlatformMenuItem(
                   label: 'Close Window',
@@ -308,6 +277,31 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 PlatformMenuItem(
                   label: 'Show Kanoli Window',
                   onSelected: () => unawaited(_showWindowViaNative()),
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: 'Tools',
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: 'Privacy Settings',
+                  onSelected: () => unawaited(_openPrivacySettings()),
+                ),
+                PlatformMenuItem(
+                  label: 'Diagnostics',
+                  onSelected: () => unawaited(_openDiagnosticsPanel()),
+                ),
+                PlatformMenuItem(
+                  label: 'Reveal Active Board in Finder',
+                  onSelected: () => unawaited(_revealActiveBoardInFinder()),
+                ),
+                PlatformMenuItem(
+                  label: 'Copy Active Board Path',
+                  onSelected: () => unawaited(_copyActiveBoardPath()),
                 ),
               ],
             ),
@@ -597,18 +591,29 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               children: <Widget>[
                 Expanded(
                   child: _pendingNewColumnId == column.id
-                      ? TextField(
-                          controller: _newColumnTitleController,
-                          focusNode: _newColumnTitleFocusNode,
-                          autofocus: true,
-                          textInputAction: TextInputAction.done,
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            hintText: 'New column',
-                            border: InputBorder.none,
+                      ? Focus(
+                          onKeyEvent: (FocusNode node, KeyEvent event) {
+                            if (event is KeyDownEvent &&
+                                event.logicalKey == LogicalKeyboardKey.escape) {
+                              _cancelPendingNewColumn();
+                              return KeyEventResult.handled;
+                            }
+                            return KeyEventResult.ignored;
+                          },
+                          child: TextField(
+                            controller: _newColumnTitleController,
+                            focusNode: _newColumnTitleFocusNode,
+                            autofocus: true,
+                            textInputAction: TextInputAction.done,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              hintText: 'New column',
+                              border: InputBorder.none,
+                            ),
+                            onSubmitted: (_) =>
+                                _commitPendingNewColumnAndCreateFirstItem(),
+                            onTapOutside: (_) => _commitPendingNewColumn(),
                           ),
-                          onSubmitted: (_) => _commitPendingNewColumn(),
-                          onTapOutside: (_) => _commitPendingNewColumn(),
                         )
                       : Text(
                           column.title.trim().isEmpty
@@ -636,7 +641,13 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
             const SizedBox(height: 8),
             Expanded(
               child: (!widget.controller.isFilterActive && column.items.isEmpty)
-                  ? _emptyColumnDropTarget(column: column)
+                  ? Column(
+                      children: <Widget>[
+                        Expanded(child: _emptyColumnDropTarget(column: column)),
+                        const SizedBox(height: 8),
+                        _addItemButton(column, visuals),
+                      ],
+                    )
                   : SingleChildScrollView(
                       child: Column(
                         children: <Widget>[
@@ -675,29 +686,33 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                                 visuals: visuals,
                               );
                             }),
+                          if (!widget.controller.isFilterActive) ...<Widget>[
+                            const SizedBox(height: 8),
+                            _addItemButton(column, visuals),
+                          ],
                         ],
                       ),
                     ),
             ),
-            if (!widget.controller.isFilterActive) ...<Widget>[
-              const SizedBox(height: 4),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: visuals.addItemButtonGradient,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.background,
-                  ),
-                  onPressed: () => _addItem(column),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add item'),
-                ),
-              ),
-            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _addItemButton(BoardColumn column, AuraVisualProfile visuals) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: visuals.addItemButtonGradient,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          foregroundColor: AppTheme.background,
+        ),
+        onPressed: () => _addItem(column),
+        icon: const Icon(Icons.add),
+        label: const Text('Add item'),
       ),
     );
   }
@@ -716,18 +731,29 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       child: ListTile(
         dense: true,
         title: _pendingNewItemId == item.id
-            ? TextField(
-                controller: _newItemTitleController,
-                focusNode: _newItemTitleFocusNode,
-                autofocus: true,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  isDense: true,
-                  hintText: 'New item',
-                  border: InputBorder.none,
+            ? Focus(
+                onKeyEvent: (FocusNode node, KeyEvent event) {
+                  if (event is KeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.escape) {
+                    _cancelPendingNewItem();
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: TextField(
+                  controller: _newItemTitleController,
+                  focusNode: _newItemTitleFocusNode,
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'New item',
+                    border: InputBorder.none,
+                  ),
+                  onSubmitted: (_) =>
+                      _commitPendingNewItemAndCreateNextItem(sourceColumn),
+                  onTapOutside: (_) => _commitPendingNewItem(),
                 ),
-                onSubmitted: (_) => _commitPendingNewItem(),
-                onTapOutside: (_) => _commitPendingNewItem(),
               )
             : Text(item.displayTitle),
         subtitle: item.metadataSummary.isEmpty
@@ -873,15 +899,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ),
               ),
               child: Center(
-                child: Text(
-                  isActive ? 'Drop Item Here' : 'Drag Item Into This Column',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isActive
-                        ? const Color(0xFF8DE0C8)
-                        : AppTheme.muted,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
+                child: isActive
+                    ? Text(
+                        'Drop Item Here',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF8DE0C8),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             );
           },
@@ -1660,6 +1686,40 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     });
   }
 
+  void _commitPendingNewColumnAndCreateFirstItem() {
+    final columnId = _pendingNewColumnId;
+    _commitPendingNewColumn();
+    if (columnId == null) {
+      return;
+    }
+
+    final column = widget.controller.columns
+        .where((BoardColumn value) => value.id == columnId)
+        .firstOrNull;
+    if (column == null) {
+      return;
+    }
+
+    _addItem(column);
+  }
+
+  void _cancelPendingNewColumn() {
+    final columnId = _pendingNewColumnId;
+    if (columnId == null) {
+      return;
+    }
+    widget.controller.deleteColumn(columnId);
+    if (!mounted) {
+      _pendingNewColumnId = null;
+      _newColumnTitleController.clear();
+      return;
+    }
+    setState(() {
+      _pendingNewColumnId = null;
+      _newColumnTitleController.clear();
+    });
+  }
+
   void _commitPendingNewItem() {
     final itemId = _pendingNewItemId;
     if (itemId == null) {
@@ -1672,6 +1732,37 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       widget.controller.updateItemTitle(itemId, title);
     }
 
+    if (!mounted) {
+      _pendingNewItemId = null;
+      _newItemTitleController.clear();
+      return;
+    }
+    setState(() {
+      _pendingNewItemId = null;
+      _newItemTitleController.clear();
+    });
+  }
+
+  void _commitPendingNewItemAndCreateNextItem(BoardColumn column) {
+    final pendingId = _pendingNewItemId;
+    final pendingTitle = _newItemTitleController.text.trim();
+    _commitPendingNewItem();
+
+    // Preserve existing behavior: empty pending item is removed and does not
+    // auto-chain into more empty items.
+    if (pendingId == null || pendingTitle.isEmpty) {
+      return;
+    }
+
+    _addItem(column);
+  }
+
+  void _cancelPendingNewItem() {
+    final itemId = _pendingNewItemId;
+    if (itemId == null) {
+      return;
+    }
+    widget.controller.deleteItem(itemId);
     if (!mounted) {
       _pendingNewItemId = null;
       _newItemTitleController.clear();
