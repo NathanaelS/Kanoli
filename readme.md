@@ -14,14 +14,14 @@ Kanoli is the brain child of me, Nathanael Stutz, entirely vibecoded inside of C
 
 The vast majority of the documents you are about to go through are AI generated, but I have done my best to include comments where possible, and to still be the "human face" of this project. I have a "Vision" document available explaining workflow/thought process of the app and creation.
 
-And now, begin the AI paragraphs......
+And now, begin the AI generated paragraphs edited by me.......
 
 <!-- CODEX DO NOT EDIT -->
 
 
 ## Quick Start
 
-Kanoli Dart has a macOS `.dmg` build available for release. Download the latest `.dmg` from the GitHub Releases page when it is published, install Kanoli, and open the app normally.
+I currently have a MacOS file available for download. Download the latest `.dmg` from the GitHub Releases page when it is published, install Kanoli, and open the app normally.
 
 If macOS blocks launch, go to **System Settings > Privacy & Security** and allow Kanoli to open.
 
@@ -171,9 +171,8 @@ The Flutter project itself lives in [kanoli_flutter](kanoli_flutter/). -->
 
 ## Roadmap
 
-Kanoli Dart is focused on:
+My current roadmap:
 
-- Maintaining parity with the original Swift build.
 - Hardening local file access across supported platforms.
 - Preserving Markdown and `todo.txt` compatibility.
 - Improving offline reliability and save safety.
