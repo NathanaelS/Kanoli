@@ -47,15 +47,15 @@ To run from source instead:
    flutter run
    ```
 
-For a specific desktop target:
+<!-- For a specific desktop target:
 
 ```bash
 flutter run -d macos
 flutter run -d windows
 flutter run -d linux
-```
+``` -->
 
-Use `flutter devices` to see which targets are available on your machine.
+<!-- Use `flutter devices` to see which targets are available on your machine. -->
 
 ## Current Build Status
 
@@ -64,7 +64,7 @@ Use `flutter devices` to see which targets are available on your machine.
 - Core board workflows are implemented in Flutter.
 - Additional platform packaging, signing, and distribution are still pending.
 
-## Build Options
+<!-- ## Build Options
 
 Run these commands from:
 
@@ -123,7 +123,7 @@ iOS:
 flutter build ios
 ```
 
-iOS builds require Xcode and Apple signing configuration. Android builds require Android Studio or equivalent Android SDK tooling.
+iOS builds require Xcode and Apple signing configuration. Android builds require Android Studio or equivalent Android SDK tooling. -->
 
 ## Local-First Data Model
 
@@ -151,7 +151,11 @@ Open an issue in this repository and include:
 
 Issue tracker: [GitHub Issues](https://github.com/NathanaelS/KanoliDart/issues)
 
-## Documentation
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for Flutter/Dart setup, style, testing, and local-file compatibility guidance.
+
+<!-- ## Documentation
 
 Project planning and parity documents live in [Markdown Plan Files](<Markdown Plan Files/>).
 
@@ -163,7 +167,7 @@ Useful starting points:
 - [Risk Register Phase 1](<Markdown Plan Files/RISK_REGISTER_PHASE1.md>)
 - [Phase 3 Production Hardening Plan](<Markdown Plan Files/PHASE3_PRODUCTION_HARDENING_PLAN.md>)
 
-The Flutter project itself lives in [kanoli_flutter](kanoli_flutter/).
+The Flutter project itself lives in [kanoli_flutter](kanoli_flutter/). -->
 
 ## Roadmap
 
