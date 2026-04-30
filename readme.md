@@ -6,9 +6,7 @@
 [![Status](https://img.shields.io/badge/status-pre--release-orange)](#quick-start)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-Kanoli is a local-first, Trello-inspired kanban app that stores board data in plain Markdown and optional board-adjacent `todo.txt` files. The app was originally created in the Swift language and can be found at https://github.com/NathanaelS/Kanoli. This repository contains the Flutter/Dart rebuild intended to make Kanoli available to macOS, Windows, Linux, iOS, and Android.
-
-As of April 29th, I have not packaged this into a portable build, so I recommend using Visual Studio Code with Flutter installed.
+Kanoli is a local-first, Trello-inspired kanban app that stores board data in plain Markdown and optional board-adjacent `todo.txt` files. The app was originally created in the Swift language and can be found at https://github.com/NathanaelS/KanoliSwift. This repository contains the Flutter/Dart rebuild intended to make Kanoli useable on macOS, Windows, iOS, and Android, and maybe Linux just because it's the only one left.
 
 Kanoli is the brain child of me, Nathanael Stutz, entirely vibecoded inside of Codex. I am not a software engineer and I do not claim that this app is without flaws. This app is built by me, for me, for my system, in an effort to have more of my information stored and handled locally. I am making it open source and public facing in the hopes that it can either help or inspire others.
 
