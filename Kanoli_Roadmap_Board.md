@@ -24,12 +24,13 @@
 > checklist-item:22222222-2222-4222-8222-222222222222:[x] Replace old KanoliDartBuild paths with current KanoliDart paths where appropriate
 
 ## (A) Finish macOS release readiness +macos +release +packaging id:22222222-2222-4222-8222-222222222223
-> note:2026-05-10T12:00:00-07:00 A macOS .dmg artifact exists. The remaining work is distribution polish, signing/notarization, and installer QA.
+> note:2026-05-10T12:00:00-07:00 Target release is Kanoli 0.6.0 Beta as an unsigned public beta DMG. The signed/notarized Apple Developer ID path is documented as a future upgrade, not a blocker for this beta.
+> note:2026-05-10T13:40:00-07:00 Built and verified Kanoli-0.6.0-beta.dmg. The macOS bundle reports version 0.6.0 build 1; the beta label is carried by the release name, tag, and DMG filename.
 > checklist:22222222-2222-4222-8222-222222222224 Release checklist
-> checklist-item:22222222-2222-4222-8222-222222222224:[ ] Confirm build artifact version and release naming
-> checklist-item:22222222-2222-4222-8222-222222222224:[ ] Add signing and notarization workflow notes
+> checklist-item:22222222-2222-4222-8222-222222222224:[x] Confirm build artifact version and release naming
+> checklist-item:22222222-2222-4222-8222-222222222224:[x] Add signing and notarization workflow notes
 > checklist-item:22222222-2222-4222-8222-222222222224:[ ] Smoke install on a clean macOS user profile
-> checklist-item:22222222-2222-4222-8222-222222222224:[ ] Prepare public release notes
+> checklist-item:22222222-2222-4222-8222-222222222224:[x] Prepare public release notes
 
 ## (B) Run cross-platform smoke matrix +windows +linux +ios +android id:22222222-2222-4222-8222-222222222225
 > note:2026-05-10T12:00:00-07:00 Flutter targets are enabled, but Windows, Linux, iOS, and Android smoke coverage was explicitly deferred.
