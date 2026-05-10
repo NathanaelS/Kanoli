@@ -2,7 +2,13 @@
 
 Date: 2026-04-25  
 Branch: `DartPort-Features`  
-Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDartBuild/kanoli_flutter`
+Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
+
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This matrix is retained as the Phase 2 macOS-first smoke record. Windows, Linux, iOS, and Android smoke testing remains deferred and is now tracked by the Kanoli board card `Run cross-platform smoke matrix`.
 
 ## Goal
 
@@ -12,7 +18,7 @@ Execute parity smoke tests from the roadmap across core workflows and failure pa
 
 Current scope decision:
 - Phase 2 is macOS-first.
-- Windows/Linux/iOS/Android smoke runs are deferred to a later platform-expansion phase.
+- Windows/Linux/iOS/Android smoke runs are deferred to the Kanoli board card `Run cross-platform smoke matrix`.
 
 ## Automated Checks (Executed)
 

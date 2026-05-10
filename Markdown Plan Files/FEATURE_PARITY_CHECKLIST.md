@@ -1,5 +1,11 @@
 # Kanoli Flutter Rebuild - Feature Parity Checklist
 
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This checklist is retained as the feature parity record for the Flutter rebuild. Core parity is complete; cross-platform smoke and release-readiness follow-ups are now tracked on the Kanoli board.
+
 Status legend:
 
 - `[ ]` Not started
@@ -8,7 +14,7 @@ Status legend:
 
 ## Foundation
 
-- [x] Flutter project initialized in `KanoliDartBuild`
+- [x] Flutter project initialized; current workspace is `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
 - [x] Target platforms enabled: macOS, Windows, Linux, iOS, Android
 - [x] App theming baseline configured
 - [x] Routing/app shell created
@@ -97,4 +103,6 @@ Status legend:
 - [x] Added regression tests for legacy formats
 - [x] Widget tests for critical flows
 - [~] Smoke tests on all 5 target OSes
-- [~] Parity sign-off pass against Swift app behavior
+- [x] Parity sign-off pass against Swift app behavior
+
+Tracking note: remaining non-macOS smoke work is tracked by the Kanoli board card `Run cross-platform smoke matrix`.

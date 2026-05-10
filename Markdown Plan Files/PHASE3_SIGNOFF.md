@@ -2,7 +2,13 @@
 
 Date: 2026-04-28  
 Branch: `DartPort-Features`  
-Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDartBuild/kanoli_flutter`
+Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
+
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This signoff remains the source of record for completed Phase 3 macOS hardening. Follow-on planning now lives in the Kanoli board in the KanoliDart repo.
 
 ## Scope Completion
 
@@ -68,4 +74,3 @@ Cross-platform follow-on:
 
 Recommended for continued macOS feature development on top of this branch.  
 Risk level for local data loss is substantially reduced compared to pre-Phase-3 state.
-

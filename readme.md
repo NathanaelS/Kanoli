@@ -171,7 +171,9 @@ The Flutter project itself lives in [kanoli_flutter](kanoli_flutter/). -->
 
 ## Roadmap
 
-My current roadmap:
+The active planning and tracking board is [Kanoli_Roadmap_Board.md](Kanoli_Roadmap_Board.md). Treat that Kanoli board as the source of truth for roadmap status across both the Dart/Flutter rebuild and any future Swift-side work.
+
+Current roadmap themes:
 
 - Hardening local file access across supported platforms.
 - Preserving Markdown and `todo.txt` compatibility.

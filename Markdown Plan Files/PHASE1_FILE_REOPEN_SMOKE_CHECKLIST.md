@@ -2,7 +2,13 @@
 
 Date: 2026-04-25 13:03:07 MST
 Branch: `DartPort-Features`
-Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDartBuild/kanoli_flutter`
+Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
+
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This checklist is retained as a historical Phase 1 macOS file-access/reopen validation record. Active planning and deferred cross-platform smoke work now live in the Kanoli board in the KanoliDart repo.
 
 ## Scope
 
@@ -97,6 +103,8 @@ Use a board outside app container, for example:
 ## Windows / Linux / iOS / Android (Queued)
 
 For each platform, run the same six cases with platform-appropriate file picker paths. Record pass/fail and notes.
+
+Tracking note: these platform checks are now tracked by the Kanoli board card `Run cross-platform smoke matrix`.
 
 - Windows: PENDING
 - Linux: PENDING

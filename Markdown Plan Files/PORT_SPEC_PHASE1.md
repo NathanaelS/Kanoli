@@ -1,11 +1,16 @@
 # Kanoli Swift -> Flutter Port Spec (Phase 1)
 
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This document is retained as the historical Phase 1 port specification. The Flutter rebuild now lives at `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`; core parity is complete, Phase 2 macOS smoke passed, and Phase 3 macOS hardening is signed off.
+
 ## Scope and Non-Negotiables
 
-- Source of truth (read-only): `/Users/krysilisproductions/Documents/Kanoli`
-- New implementation workspace: `/Users/krysilisproductions/Documents/KanoliDartBuild`
-- No file in `Kanoli` is modified, deleted, or moved.
-- Goal: behavioral parity first, then UX polish.
+- Original source of truth during the port: `/Users/krysilisproductions/Documents/Kanoli/KanoliSwift`
+- Current Flutter workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
+- Original goal: behavioral parity first, then UX polish.
 
 ## Current Swift App Architecture (Observed)
 
@@ -121,4 +126,3 @@
 - New features beyond current Swift behavior.
 - File format changes.
 - Refactoring the original Swift project.
-

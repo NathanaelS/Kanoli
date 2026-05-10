@@ -2,14 +2,26 @@
 
 Date: 2026-04-25  
 Branch: `DartPort-Features`  
-Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDartBuild/kanoli_flutter`
-Status: In progress (Workstreams 1-3 implemented on 2026-04-28)
+Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
+Status: Signed off on 2026-04-28. See `PHASE3_SIGNOFF.md`.
+
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This document is retained as the Phase 3 execution plan. The active planning and tracking source is now the Kanoli board in the KanoliDart repo.
+
+Phase 3 macOS production hardening has been completed and signed off. Deferred follow-on work is tracked on the board:
+- `Finish macOS release readiness`
+- `Run cross-platform smoke matrix`
+- `Design optional local encryption`
+- `Build full cross-platform release process`
 
 ## Objective
 
 Harden the Flutter macOS build for reliable daily use after Phase 2 parity completion.  
 Primary focus: resilience, data safety, and failure recovery.  
-Cross-platform hardening (Windows/Linux/iOS/Android) is explicitly deferred.
+Cross-platform hardening (Windows/Linux/iOS/Android) was explicitly deferred from Phase 3 and is now tracked on the Kanoli board.
 
 ## Scope (In)
 

@@ -1,7 +1,14 @@
 # Phase 3 Hardening Checklist (macOS)
 
 Date started: 2026-04-28  
-Project root: `/Users/krysilisproductions/Documents/Kanoli/KanoliDartBuild/kanoli_flutter`
+Project root: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
+Status: Signed off on 2026-04-28. See `PHASE3_SIGNOFF.md`.
+
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This checklist is retained as the Phase 3 macOS hardening execution log. The remaining release, cross-platform, and long-term hardening items are tracked on the Kanoli board.
 
 ## Workstream 1: Safe Persistence Layer
 
@@ -40,5 +47,7 @@ Notes:
 
 - [x] `flutter analyze` pass (current branch state).
 - [x] `flutter test` pass (current branch state).
-- [ ] macOS hardening smoke checklist pass.
-- [ ] no known P0/P1 data-loss defects.
+- [x] macOS hardening smoke checklist pass.
+- [x] no known P0/P1 data-loss defects.
+
+Exit criteria resolved by `PHASE3_SIGNOFF.md`; known limitations were accepted for Phase 3 and moved to follow-on planning.

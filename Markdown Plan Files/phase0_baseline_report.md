@@ -1,8 +1,14 @@
 # Phase 0 Baseline Report
 
 Date: 2026-04-25 12:54:19 MST
-Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDartBuild/kanoli_flutter`
+Workspace: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter`
 Branch: `DartPort-Features`
+
+Current planning source: `/Users/krysilisproductions/Documents/Kanoli/KanoliDart/Kanoli_Roadmap_Board.md`
+
+## Current Status Note
+
+This report is retained as the historical Phase 0 baseline capture. Later validation supersedes this snapshot: Phase 2 macOS smoke passed, Phase 3 macOS hardening is signed off, and current planning now lives in the Kanoli board in the KanoliDart repo.
 
 ## 1. Baseline Gates
 
@@ -85,8 +91,10 @@ Evidence captured from existing automated tests:
 - [ ] Clean working tree at freeze point
 
 Working tree note at capture time:
-- Modified: `KanoliDartBuild/kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart`
+- Modified: `kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart`
 - Untracked: `PROJECT_SCOPE_ROADMAP_SECURITY.md`
+
+Current note: this was a point-in-time capture. The current repo state should be checked with `git status --short` rather than inferred from this historical working-tree note.
 
 ## 6. Phase 0 Status
 
