@@ -12,7 +12,7 @@ Kanoli is a local-first, Trello-inspired kanban app that stores board data in pl
 
 Kanoli is the brain child of me, Nathanael Stutz, entirely vibecoded inside of Codex. I am not a software engineer and I do not claim that this app is without flaws. This app is built by me, for me, for my system, in an effort to have more of my information stored and handled locally. I am making it open source and public facing in the hopes that it can either help or inspire others.
 
-The vast majority of the documents you are about to go through are AI generated, but I have done my best to include comments where possible, and to still be the "human face" of this project. I have a "Vision" document available explaining workflow/thought process of the app and creation.
+The vast majority of the documents you are about to go through are AI generated, but I have done my best to include comments where possible, and to still be the "human face" of this project. I am working on a "Vision" document explaining workflow/thought process of the app and creation.
 
 And now, begin the AI generated paragraphs edited by me.......
 
@@ -25,109 +25,14 @@ I currently have a MacOS file available for download. Download the latest `.dmg`
 
 If macOS blocks launch, go to **System Settings > Privacy & Security** and allow Kanoli to open.
 
-To run from source instead:
+## Dev Branch
 
-1. Install Flutter and platform toolchains for your target OS.
-2. Clone this repository.
-3. Enter the Flutter app folder:
+If you want to have cool features that aren't available on the main release, and potentially have a broken app at times, you can clone the Dev Branch and build off of that. I am NOT releasing dev versions, so this will require VS Code and the Flutter SDK on your machine.
 
-   ```bash
-   cd kanoli_flutter
-   ```
 
-4. Fetch dependencies:
+## Local-First Data Model (Or "My stuff is my stuff")
 
-   ```bash
-   flutter pub get
-   ```
-
-5. Run on an available device:
-
-   ```bash
-   flutter run
-   ```
-
-<!-- For a specific desktop target:
-
-```bash
-flutter run -d macos
-flutter run -d windows
-flutter run -d linux
-``` -->
-
-<!-- Use `flutter devices` to see which targets are available on your machine. -->
-
-## Current Build Status
-
-- A macOS `.dmg` artifact has been created and is intended for release distribution.
-- Source builds remain available for development and non-macOS targets.
-- Core board workflows are implemented in Flutter.
-- Additional platform packaging, signing, and distribution are still pending.
-
-<!-- ## Build Options
-
-Run these commands from:
-
-```bash
-/Users/krysilisproductions/Documents/Kanoli/KanoliDart/kanoli_flutter
-```
-
-or from the cloned repo's `kanoli_flutter` folder.
-
-### Analyze and Test
-
-```bash
-flutter analyze
-flutter test
-```
-
-### Desktop Builds
-
-macOS:
-
-```bash
-flutter build macos
-```
-
-Windows:
-
-```bash
-flutter build windows
-```
-
-Linux:
-
-```bash
-flutter build linux
-```
-
-Desktop builds require the relevant platform toolchain. macOS builds require Xcode and CocoaPods support where needed. Windows and Linux builds must be performed on their respective supported host platforms.
-
-### Mobile Builds
-
-Android APK:
-
-```bash
-flutter build apk
-```
-
-Android app bundle:
-
-```bash
-flutter build appbundle
-```
-
-iOS:
-
-```bash
-flutter build ios
-```
-
-iOS builds require Xcode and Apple signing configuration. Android builds require Android Studio or equivalent Android SDK tooling. -->
-
-## Local-First Data Model
-
-Kanoli uses local files as the source of truth:
+Kanoli is entirely based on offline files that are still human readable if the app is not available. Being organized should not require a constant internet connection, and this app is built with that premise.
 
 - Board columns are stored as Markdown `#` headings.
 - Cards are stored as Markdown `##` headings.
@@ -136,7 +41,6 @@ Kanoli uses local files as the source of truth:
 - Board todo items can be stored in companion `BoardName.todo.txt` files.
 - Trello JSON imports are converted into Kanoli Markdown boards.
 
-The app should remain usable offline with local documents. External links in notes may open outside the app only when the user explicitly clicks them.
 
 ## Bug Tracker
 
@@ -155,35 +59,24 @@ Issue tracker: [GitHub Issues](https://github.com/NathanaelS/KanoliDart/issues)
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for Flutter/Dart setup, style, testing, and local-file compatibility guidance.
 
-<!-- ## Documentation
-
-Project planning and parity documents live in [Markdown Plan Files](<Markdown Plan Files/>).
-
-Useful starting points:
-
-- [Feature Parity Checklist](<Markdown Plan Files/FEATURE_PARITY_CHECKLIST.md>)
-- [Full Parity Signoff](<Markdown Plan Files/FULL_PARITY_SIGNOFF.md>)
-- [Port Spec Phase 1](<Markdown Plan Files/PORT_SPEC_PHASE1.md>)
-- [Risk Register Phase 1](<Markdown Plan Files/RISK_REGISTER_PHASE1.md>)
-- [Phase 3 Production Hardening Plan](<Markdown Plan Files/PHASE3_PRODUCTION_HARDENING_PLAN.md>)
-
-The Flutter project itself lives in [kanoli_flutter](kanoli_flutter/). -->
-
 ## Roadmap
 
-The active planning and tracking board is [Kanoli_Roadmap_Board.md](Kanoli_Roadmap_Board.md). Treat that Kanoli board as the source of truth for roadmap status across both the Dart/Flutter rebuild and any future Swift-side work.
+I am currently tracking build status and feature ideas in the following board, [Kanoli_Roadmap_Board.md](Kanoli_Roadmap_Board.md). 
 
-Current roadmap themes:
+Current ideas that I am rattling off my head in no particular order:
 
-- Hardening local file access across supported platforms.
-- Preserving Markdown and `todo.txt` compatibility.
-- Improving offline reliability and save safety.
-- Preparing platform packaging and signed releases.
-- Adding future enhancements such as attachments, richer Markdown workflows, and optional encryption.
+- Cleaning up UI and implementing "prettier" features.
+- Markdown editor inside of app for drafting documents.
+- Mermaid support for creating flow charts and diagrams using markdown
+- File attachment support
+- Calendar view?
+- Better filtering conditions
+- Encryption?
+- Ultimately trying to cross device share via SyncThing
 
 ## Inspiration
 
-Kanoli takes inspiration from:
+Inspiration for this app and how it looks come from the following places:
 
 - [Plaintext Productivity][plaintext-productivity]
 - [todo.txt][todotxt]
