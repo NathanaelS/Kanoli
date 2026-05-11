@@ -1,3 +1,5 @@
+// Bottom-sheet editor for a card's title, metadata, labels, notes, checklists,
+// and optional todo.txt sidecar items.
 import 'dart:async';
 import 'dart:io';
 
@@ -42,7 +44,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     'kanoli/native_dialogs',
   );
   static const Set<String> _supportedPriorities = <String>{'A', 'B', 'C', 'D'};
-  static const String _confirmDeleteTodoPrefKey = 'kanoli.confirm.deleteTodo.v2';
+  static const String _confirmDeleteTodoPrefKey =
+      'kanoli.confirm.deleteTodo.v2';
 
   late BoardItem _draft;
   late List<BoardNote> _notes;
@@ -67,6 +70,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   @override
   void initState() {
     super.initState();
+    // Work on a draft copy so each edit can be normalized before notifying the
+    // board controller.
     _draft = BoardItem(
       id: widget.item.id,
       title: widget.item.title,
@@ -108,6 +113,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // The sheet switches between the full editor and a label-filtered view.
     return SafeArea(
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.88,
@@ -184,6 +190,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Widget _metadataEditor() {
+    // Metadata maps directly to Markdown card metadata: priority and due date.
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -259,6 +266,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Widget _labelsEditor() {
+    // Labels are edited as comma-separated text but displayed as chips for quick
+    // review and filtering.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -298,6 +307,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Widget _notesEditor() {
+    // Notes are stored as timestamped Markdown blocks on save.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -359,6 +369,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Widget _checklistEditor() {
+    // Each checklist is a Markdown task-list section under the card.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -472,6 +483,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Widget _todoEditor() {
+    // Todo items live in a sidecar todo.txt file and are scoped to this card by
+    // card ID.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -651,6 +664,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   void _saveDraft() {
+    // Drop empty notes/checklist items before sending the draft back to the
+    // board.
     _draft.notes = _notes
         .where((BoardNote note) => note.text.trim().isNotEmpty)
         .toList();
@@ -676,6 +691,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Future<void> _loadTodoListIfAvailable() async {
+    // Try the remembered todo path first, then the default sidecar path.
     final boardFilePath = widget.boardFilePath;
     if (boardFilePath == null) {
       return;
@@ -730,6 +746,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Future<void> _createTodoList() async {
+    // macOS asks for an explicit save location; other platforms use the default
+    // sidecar beside the board.
     final boardFilePath = widget.boardFilePath;
     if (boardFilePath == null) {
       return;
@@ -826,6 +844,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   void _saveTodoList() {
+    // Save only this card's todo lines while preserving lines for other cards.
     final path = _todoListPath;
     if (path == null) {
       return;
@@ -864,6 +883,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Future<void> _rememberPathAccess(String path) async {
+    // Remembering access is a macOS-only convenience for reopened sidecar files.
     if (!Platform.isMacOS || path.trim().isEmpty) {
       return;
     }
@@ -882,7 +902,10 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     return 'kanoli.todo.path.v1::$normalized';
   }
 
-  Future<void> _persistTodoListPath(String boardFilePath, String todoPath) async {
+  Future<void> _persistTodoListPath(
+    String boardFilePath,
+    String todoPath,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _todoPathPrefsKey(boardFilePath),
@@ -924,9 +947,9 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Todo path copied.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Todo path copied.')));
   }
 
   Future<void> _deleteTodoListWithConfirmation() async {
@@ -1011,9 +1034,9 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         _otherTodoLines = <String>[];
       });
       widget.onTodoPathChanged(null);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Todo file deleted.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Todo file deleted.')));
     } on FileSystemException catch (error) {
       if (!mounted) {
         return;
@@ -1023,7 +1046,6 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       );
     }
   }
-
 }
 
 class _LabelMatch {

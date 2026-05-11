@@ -1,3 +1,5 @@
+// Main board workspace UI: app toolbar, board tabs, columns, cards, drag/drop,
+// dialogs, import/export prompts, filtering, diagnostics, and recovery flows.
 import 'dart:async';
 import 'dart:io';
 
@@ -62,6 +64,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   @override
   Widget build(BuildContext context) {
+    // The workspace listens to the session controller and redraws around the
+    // latest active board state.
     final visuals = AppTheme.visuals(_auraIntensity);
     final body = ListenableBuilder(
       listenable: widget.controller,
@@ -389,6 +393,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Widget _startupView(BuildContext context, AuraVisualProfile visuals) {
+    // First-run and no-board state: offer the primary file actions only.
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
@@ -463,6 +468,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Widget _boardView(BuildContext context, AuraVisualProfile visuals) {
+    // Active board state: tabs, optional filter summary, horizontal columns,
+    // and add-column affordance.
     final tabs = widget.controller.boardTabs;
     final selectedTabId = widget.controller.selectedTabId;
     final columns = widget.controller.isFilterActive
@@ -575,6 +582,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     BoardColumn column,
     AuraVisualProfile visuals,
   ) {
+    // Columns own inline rename/new-card state and the drop zones between cards.
     return Container(
       width: 300,
       decoration: BoxDecoration(
@@ -661,8 +669,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                                 children: <Widget>[
                                   _columnDropTarget(
                                     column: column,
-                                    destinationItemId: index <
-                                            column.items.length
+                                    destinationItemId:
+                                        index < column.items.length
                                         ? column.items[index].id
                                         : null,
                                   ),
@@ -707,9 +715,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextButton.icon(
-        style: TextButton.styleFrom(
-          foregroundColor: AppTheme.background,
-        ),
+        style: TextButton.styleFrom(foregroundColor: AppTheme.background),
         onPressed: () => _addItem(column),
         icon: const Icon(Icons.add),
         label: const Text('Add item'),
@@ -722,6 +728,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     required BoardColumn sourceColumn,
     required AuraVisualProfile visuals,
   }) {
+    // Card tiles are draggable outside filtered views and open the editor on
+    // tap for full details.
     final tile = Container(
       decoration: BoxDecoration(
         gradient: visuals.itemCardGradient,
@@ -827,6 +835,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     required BoardColumn column,
     required String? destinationItemId,
   }) {
+    // Thin drop zones between cards give precise drag targets.
     return DragTarget<_DragItemPayload>(
       onWillAcceptWithDetails: (DragTargetDetails<_DragItemPayload> details) {
         if (details.data.itemId.isEmpty) {
@@ -970,10 +979,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       border: isActive
-                          ? Border.all(
-                              color: const Color(0xCC54C59F),
-                              width: 2,
-                            )
+                          ? Border.all(color: const Color(0xCC54C59F), width: 2)
                           : null,
                       color: isActive ? const Color(0x2254C59F) : null,
                     ),
@@ -987,6 +993,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _openItemEditor(String itemId) async {
+    // The editor returns a complete BoardItem draft that replaces the active
+    // card through the session controller.
     final item = widget.controller.itemById(itemId);
     if (item == null) {
       return;
@@ -1018,6 +1026,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     required BoardItem item,
     required BoardColumn sourceColumn,
   }) async {
+    // Secondary card actions live in a bottom sheet to keep cards compact.
     final destinationColumns = widget.controller.columns
         .where((BoardColumn column) => column.id != sourceColumn.id)
         .toList();
@@ -1124,6 +1133,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _openBoard() async {
+    // Desktop/native paths use platform dialogs first, then fall back to a text
+    // prompt when the generic picker is unavailable.
     if (Platform.isMacOS) {
       if (_dialogInProgress) {
         widget.controller.logger.warning('dialogBusy', <String, Object?>{
@@ -1261,6 +1272,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _importBoard() async {
+    // Import starts from a JSON file and saves the converted Markdown board to
+    // a user-selected path.
     if (Platform.isMacOS) {
       if (_dialogInProgress) {
         widget.controller.logger.warning('dialogBusy', <String, Object?>{
@@ -1376,6 +1389,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _editFilter() async {
+    // Filters are applied in the controller so board rendering and result
+    // counts share the same state.
     final current = widget.controller.boardFilter;
     final labelsController = TextEditingController(
       text: current.labels.join(', '),
@@ -1535,6 +1550,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _openDiagnosticsPanel() async {
+    // Diagnostics are read-only here except for copying the export text.
     if (!mounted) {
       return;
     }
@@ -1574,13 +1590,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   if (recentErrors.isEmpty)
                     const Text('No recent warnings/errors.')
                   else
-                    ...recentErrors.map((String entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            entry,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        )),
+                    ...recentErrors.map(
+                      (String entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          entry,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1611,6 +1629,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _addColumn() async {
+    // New columns start as inline drafts and are committed on submit or focus
+    // loss.
     final column = widget.controller.addColumn();
     _newColumnTitleController.clear();
     if (mounted) {
@@ -1646,6 +1666,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _addItem(BoardColumn column) async {
+    // New cards use the same inline draft pattern as columns.
     final item = widget.controller.addItem(column.id);
     if (item == null) {
       return;
@@ -1775,6 +1796,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   void _showErrorIfNeeded(BuildContext context) {
+    // Snackbars are scheduled after build to avoid mutating Scaffold state
+    // during widget construction.
     final message = widget.controller.lastError;
     if (message == null || !mounted) {
       return;
@@ -1793,6 +1816,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   void _promptMissingSessionRecoveryIfNeeded(BuildContext context) {
+    // Missing remembered boards are handled one at a time so each path has a
+    // clear remove-or-replace decision.
     final missingPaths = widget.controller.missingSessionPaths;
     if (!mounted || _missingSessionPromptVisible || missingPaths.isEmpty) {
       return;
@@ -1908,9 +1933,9 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Board path copied.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Board path copied.')));
   }
 
   Future<String?> _promptText(
@@ -1920,6 +1945,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     required String hintText,
     required String submitLabel,
   }) async {
+    // Small text prompt used as a fallback when native file pickers cannot
+    // provide a path.
     final controller = TextEditingController(text: initialValue);
 
     return showDialog<String>(
@@ -2089,6 +2116,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     required String message,
     required String confirmLabel,
   }) async {
+    // Destructive confirmations can be disabled per action after the user has
+    // seen the warning once.
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) {
       return false;

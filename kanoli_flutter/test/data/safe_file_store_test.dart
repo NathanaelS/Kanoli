@@ -1,3 +1,4 @@
+// Covers atomic write behavior and backup retention.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -20,16 +21,10 @@ void main() {
       final backupRoot = Directory('${tempDir.path}/.kanoli_backups');
       expect(backupRoot.existsSync(), isTrue);
 
-      final backupDirs = backupRoot
-          .listSync()
-          .whereType<Directory>()
-          .toList();
+      final backupDirs = backupRoot.listSync().whereType<Directory>().toList();
       expect(backupDirs.length, 1);
 
-      final backups = backupDirs.single
-          .listSync()
-          .whereType<File>()
-          .toList();
+      final backups = backupDirs.single.listSync().whereType<File>().toList();
       expect(backups.length, 2);
     });
 

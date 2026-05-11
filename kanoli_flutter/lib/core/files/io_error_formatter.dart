@@ -1,3 +1,4 @@
+// Turns low-level file exceptions into short user-facing recovery messages.
 import 'dart:io';
 
 class IoErrorFormatter {

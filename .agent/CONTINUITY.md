@@ -10,6 +10,7 @@
 - 2026-05-11T02:13:26Z [USER] `bodyMarkdown` is a storage/readability feature only; no card editor UI changes in this pass.
 - 2026-05-11T02:13:26Z [USER] Readable v2.1 body prose is human-only Markdown convention, not separate status/decision schema fields.
 - 2026-05-11T02:13:26Z [CODE] `AGENTS.md` requires touched code files to stay under 300 lines and continuity to be maintained in `.agent/CONTINUITY.md`.
+- 2026-05-11T03:26:00Z [USER] Human comments do not count toward the 300 LOC code limit; keep comments concise and avoid unnecessary paragraphs.
 
 ## [PROGRESS]
 
@@ -26,3 +27,5 @@
 
 - 2026-05-11T02:58:00Z [CODE] Markdown v2.1 implemented: parser/serializer preserve optional `BoardItem.bodyMarkdown`, legacy compact/current v2 reads remain compatible, and the roadmap board now uses selective body prose.
 - 2026-05-11T02:58:00Z [TOOL] Verification passed: `dart format`, `flutter analyze`, full `flutter test`, and targeted roadmap body parser test.
+- 2026-05-11T03:42:00Z [CODE] Added concise human-facing file summaries to all Dart source/test files and section comments around major app, persistence, controller, and editor flows.
+- 2026-05-11T03:42:00Z [TOOL] Comment pass verification passed: `dart format lib test`, `flutter analyze`, and full `flutter test`.

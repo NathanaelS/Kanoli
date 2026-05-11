@@ -1,3 +1,4 @@
+// Covers core Markdown board parsing, saving, and legacy migration behavior.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

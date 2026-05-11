@@ -1,6 +1,8 @@
+// Shared date formatting and ID generation helpers for board persistence.
 import 'dart:math';
 
 abstract final class TodoDateFormatter {
+  // todo.txt due dates intentionally use date-only yyyy-MM-dd values.
   static DateTime? tryParse(String value) {
     final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
     if (match == null) {
@@ -22,6 +24,7 @@ abstract final class TodoDateFormatter {
 }
 
 abstract final class NoteDateFormatter {
+  // Notes preserve full timestamps with local timezone offsets in Markdown.
   static DateTime? tryParse(String value) {
     return DateTime.tryParse(value);
   }
@@ -46,6 +49,7 @@ abstract final class NoteDateFormatter {
 }
 
 abstract final class IdGenerator {
+  // Board IDs only need local uniqueness across user files.
   static final Random _random = Random.secure();
 
   static String uuid() {

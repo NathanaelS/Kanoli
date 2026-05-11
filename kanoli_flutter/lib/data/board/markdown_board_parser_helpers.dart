@@ -1,3 +1,5 @@
+// Small parsing helpers for Kanoli Markdown headings, metadata, legacy notes,
+// and checklist items.
 import '../../domain/board/board_entities.dart';
 
 final RegExp _uuidPattern = RegExp(
@@ -22,6 +24,8 @@ String? noteContent(String line) {
 }
 
 BoardItem parseLegacyCardHeading(String line) {
+  // Legacy card headings combine priority, title, labels, due date, and ID in
+  // one compact line.
   final parts = line
       .split(' ')
       .where((String value) => value.isNotEmpty)
@@ -89,6 +93,8 @@ void applyItemMetadata({
   required BoardColumn column,
   required int itemIndex,
 }) {
+  // v2 metadata lives under the card heading. Unknown keys are ignored so
+  // future metadata can be introduced safely.
   final item = column.items[itemIndex];
   switch (key) {
     case 'id':
@@ -129,6 +135,7 @@ String? setCurrentChecklistId({
   required String? currentChecklistId,
   required String newChecklistId,
 }) {
+  // A checklist ID line belongs to the most recently opened checklist section.
   if (newChecklistId.isEmpty || !_uuidPattern.hasMatch(newChecklistId)) {
     return currentChecklistId;
   }
@@ -268,6 +275,8 @@ String? appendChecklistItem({
   required int itemIndex,
   required String? checklistId,
 }) {
+  // Legacy item lines may appear without an explicit checklist header. In that
+  // case Kanoli creates a default checklist to preserve the item.
   var currentChecklistId = checklistId;
 
   if (currentChecklistId == null) {

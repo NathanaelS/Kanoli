@@ -1,7 +1,12 @@
+// Provides cautious file writes with backups and simple cleanup helpers for
+// board and todo persistence.
 import 'dart:io';
 
 class SafeFileStore {
-  SafeFileStore({this.maxBackups = 5, this.backupDirectoryName = '.kanoli_backups'});
+  SafeFileStore({
+    this.maxBackups = 5,
+    this.backupDirectoryName = '.kanoli_backups',
+  });
 
   final int maxBackups;
   final String backupDirectoryName;
@@ -14,6 +19,8 @@ class SafeFileStore {
     final targetFile = File(targetPath);
     targetFile.parent.createSync(recursive: true);
 
+    // Backups are made before replacement so recent good board states survive
+    // a failed save or malformed manual edit.
     if (createBackup && targetFile.existsSync()) {
       try {
         _createBackup(targetFile);
@@ -27,6 +34,8 @@ class SafeFileStore {
       '$targetPath.tmp.${DateTime.now().microsecondsSinceEpoch}',
     );
 
+    // Prefer sibling temp-file replacement, then fall back for sandboxed
+    // locations where only the selected file path is writable.
     try {
       tempFile.writeAsStringSync(content, flush: true);
       tempFile.renameSync(targetPath);
@@ -65,10 +74,10 @@ class SafeFileStore {
     backupDirectory.createSync(recursive: true);
 
     final basename = targetFile.path.split(Platform.pathSeparator).last;
-    final timestamp = DateTime.now()
-        .toUtc()
-        .toIso8601String()
-        .replaceAll(':', '-');
+    final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(
+      ':',
+      '-',
+    );
     final backupFile = File('${backupDirectory.path}/$timestamp.$basename.bak');
 
     targetFile.copySync(backupFile.path);
@@ -87,16 +96,14 @@ class SafeFileStore {
       return;
     }
 
-    final files = backupDirectory
-        .listSync()
-        .whereType<File>()
-        .toList()
+    final files = backupDirectory.listSync().whereType<File>().toList()
       ..sort((File a, File b) {
         final aMs = a.lastModifiedSync().millisecondsSinceEpoch;
         final bMs = b.lastModifiedSync().millisecondsSinceEpoch;
         return bMs.compareTo(aMs);
       });
 
+    // Keep the newest backups and remove older snapshots for this board path.
     for (final stale in files.skip(maxBackups)) {
       stale.deleteSync();
     }

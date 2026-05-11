@@ -1,3 +1,4 @@
+// Normalizes Flutter and uncaught runtime errors into logger events.
 import 'package:flutter/foundation.dart';
 
 import '../logging/app_logger.dart';

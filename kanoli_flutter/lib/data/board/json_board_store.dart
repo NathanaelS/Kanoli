@@ -1,3 +1,5 @@
+// Imports Kanoli JSON and Trello JSON exports, normalizing both into board
+// columns that can be saved as Kanoli Markdown.
 import 'dart:convert';
 import 'dart:io';
 
@@ -52,6 +54,8 @@ class JsonBoardStore {
   }
 
   List<BoardColumn> _decodeImportedBoard(Map<String, dynamic> json) {
+    // Kanoli JSON mirrors the domain model, so this path mainly validates
+    // loose JSON values and restores dates, notes, and checklist state.
     final rawColumns = (json['columns'] as List<dynamic>? ?? <dynamic>[]);
 
     return rawColumns.whereType<Map<String, dynamic>>().map((
@@ -136,6 +140,8 @@ class JsonBoardStore {
   }
 
   List<BoardColumn> _decodeTrelloBoard(Map<String, dynamic> json) {
+    // Trello exports are relationship-heavy. Build lookup maps first so cards
+    // can be assembled in list order with labels, comments, and checklists.
     final lists = (json['lists'] as List<dynamic>? ?? <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .toList();

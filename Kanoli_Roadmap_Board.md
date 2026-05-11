@@ -1,27 +1,5 @@
 # Current State
 
-## Confirm macOS-first Phase 3 baseline
-> kanoli:id 11111111-1111-4111-8111-111111111111
-> kanoli:priority A
-> kanoli:labels docs, phase3, release
-
-_Summary: KanoliDart is the current release baseline, with macOS hardening complete._
-
-**Status:** Baseline confirmed and documented.
-**Decision:** Treat the Flutter/Dart app as the active product track while preserving Swift context for reference.
-
-### Notes
-
-#### 2026-05-10T12:00:00-07:00
-KanoliDart is the active Flutter rebuild. Core feature parity is complete, Phase 2 macOS smoke passed, and Phase 3 macOS hardening is signed off.
-
-### Baseline evidence
-> kanoli:checklist 11111111-1111-4111-8111-111111111112
-- [x] flutter analyze passes
-- [x] flutter test passes
-- [x] Both KanoliDart and KanoliSwift git statuses are clean
-- [x] Reconcile stale docs that still say Phase 3 is in progress
-
 ## Preserve current local-first data contract
 > kanoli:id 11111111-1111-4111-8111-111111111113
 > kanoli:priority B
@@ -34,7 +12,7 @@ _Summary: Keep Kanoli files inspectable, editable, and durable outside the app._
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Keep Markdown and companion todo.txt files as the source of truth while expanding features.
 
 ### Compatibility guardrails
@@ -45,28 +23,6 @@ Keep Markdown and companion todo.txt files as the source of truth while expandin
 - [ ] Any new feature must round-trip safely through Markdown
 
 # Next Up
-
-## Implement human-readable Markdown v2
-> kanoli:id 66666666-6666-4666-8666-666666666661
-> kanoli:priority A
-> kanoli:labels markdown, compatibility
-
-_Summary: Replace compact machine-oriented saves with a readable Markdown board format._
-
-**Status:** Implemented as the baseline readable format.
-**Compatibility:** Legacy compact Markdown remains readable and migrates to v2 on save.
-
-### Notes
-
-#### 2026-05-10T14:10:00-07:00
-Implement readable Kanoli Markdown v2 as the default save format while keeping legacy compact Markdown readable.
-
-### Markdown v2 rollout
-> kanoli:checklist 66666666-6666-4666-8666-666666666662
-- [x] Serialize clean card headings with kanoli metadata blockquote lines
-- [x] Parse readable v2 notes and Markdown task-list checklists
-- [x] Keep legacy compact Markdown parsing compatible
-- [x] Add migration and round-trip tests
 
 ## Implement human-readable Markdown v2.1 card bodies
 > kanoli:id 77777777-7777-4777-8777-777777777771
@@ -91,52 +47,6 @@ Implement v2.1 after AGENTS.md introduced continuity and code modularity rules.
 - [x] Add body prose tests
 - [x] Verify roadmap board parses as v2.1
 
-## Reconcile roadmap and hardening documentation
-> kanoli:id 22222222-2222-4222-8222-222222222221
-> kanoli:priority A
-> kanoli:labels docs, phase3
-
-_Summary: Bring the planning documents into alignment with the completed Phase 3 signoff._
-
-**Status:** Completed.
-**Decision:** Keep historical hardening records, but remove stale in-progress language where it misleads planning.
-
-### Notes
-
-#### 2026-05-10T12:00:00-07:00
-PHASE3_SIGNOFF says Phase 3 is complete, but the production hardening plan/checklist still contain older in-progress language and unchecked exit rows.
-
-### Doc cleanup
-> kanoli:checklist 22222222-2222-4222-8222-222222222222
-- [x] Update Phase 3 plan status to signed off
-- [x] Resolve unchecked hardening checklist exit criteria or explain accepted limitations
-- [x] Replace old KanoliDartBuild paths with current KanoliDart paths where appropriate
-
-## Finish macOS release readiness
-> kanoli:id 22222222-2222-4222-8222-222222222223
-> kanoli:priority A
-> kanoli:labels macos, release, packaging
-
-_Summary: Finish the unsigned public beta release path for Kanoli 0.6.0 Beta._
-
-**Status:** DMG built and release notes prepared; clean-profile install smoke remains open.
-**Decision:** Ship the public beta unsigned, with the signed/notarized path documented as a future release upgrade.
-
-### Notes
-
-#### 2026-05-10T12:00:00-07:00
-Target release is Kanoli 0.6.0 Beta as an unsigned public beta DMG. The signed/notarized Apple Developer ID path is documented as a future upgrade, not a blocker for this beta.
-
-#### 2026-05-10T13:40:00-07:00
-Built and verified Kanoli-0.6.0-beta.dmg. The macOS bundle reports version 0.6.0 build 1; the beta label is carried by the release name, tag, and DMG filename.
-
-### Release checklist
-> kanoli:checklist 22222222-2222-4222-8222-222222222224
-- [x] Confirm build artifact version and release naming
-- [x] Add signing and notarization workflow notes
-- [ ] Smoke install on a clean macOS user profile
-- [x] Prepare public release notes
-
 ## Run cross-platform smoke matrix
 > kanoli:id 22222222-2222-4222-8222-222222222225
 > kanoli:priority B
@@ -149,7 +59,7 @@ _Summary: Validate the same core board lifecycle on every enabled Flutter target
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Flutter targets are enabled, but Windows, Linux, iOS, and Android smoke coverage was explicitly deferred.
 
 ### Platform smoke
@@ -169,7 +79,7 @@ Flutter targets are enabled, but Windows, Linux, iOS, and Android smoke coverage
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 High-value usability feature with low persistence risk because cards are already loaded in memory.
 
 ### Implementation sketch
@@ -185,7 +95,7 @@ High-value usability feature with low persistence risk because cards are already
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Existing card data already includes checklists and todo sidecar items, so this is mostly card tile UI.
 
 ### Display states
@@ -201,7 +111,7 @@ Existing card data already includes checklists and todo sidecar items, so this i
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Todo completion state already exists. This should include a confirmation prompt and preserve unrelated todo.txt lines.
 
 ### Safety criteria
@@ -217,7 +127,7 @@ Todo completion state already exists. This should include a confirmation prompt 
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Archive behavior already exists; this card is about exposing it as a faster command.
 
 ### Command surface
@@ -225,6 +135,33 @@ Archive behavior already exists; this card is about exposing it as a faster comm
 - [ ] Add shortcut/menu entry for Move to Archive
 - [ ] Ensure selected-card context is clear
 - [ ] Confirm behavior with Archive column auto-create
+
+## UI Updates
+> kanoli:id 5c7dd14e-cf1d-e0a7-21b4-2d2dd1da7099
+> kanoli:labels ux, ui
+
+### UI Features
+> kanoli:checklist 5fb603fd-b174-509d-49ac-0bd4ad432ac2
+- [ ] Margins on the sides so things don't appear just cut off
+- [ ] Enter creating additional checklist items
+
+## Archive Dates
+> kanoli:id 0dfa027c-9cd8-6a1a-bf60-1f5a74568328
+> kanoli:labels cards
+
+### Notes
+
+#### 2026-05-10T21:42:12-05:00
+When a note is archived, it should be timestamped.
+
+## Note fields need updated
+> kanoli:id 93685cb7-696c-adfa-d84e-1db2dcf398e5
+> kanoli:labels cards
+
+### Notes
+
+#### 2026-05-10T21:43:24-05:00
+Having the edit field permanently up is ugly.
 
 # Mermaid Integration
 
@@ -235,10 +172,10 @@ Archive behavior already exists; this card is about exposing it as a faster comm
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 First Mermaid step: allow users to store Mermaid source in Kanoli Markdown without rendering it yet.
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Example source: ```mermaid flowchart TD; Idea-->Build; Build-->Ship; ```
 
 ### Markdown handling
@@ -254,7 +191,7 @@ Example source: ```mermaid flowchart TD; Idea-->Build; Build-->Ship; ```
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Before rendering diagrams, Kanoli can still improve editing by recognizing Mermaid blocks and showing them as diagram source.
 
 ### Editor polish
@@ -270,7 +207,7 @@ Before rendering diagrams, Kanoli can still improve editing by recognizing Merma
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Mermaid rendering likely needs a WebView/JS or export pipeline decision. Keep this as a prototype until storage and security rules are clear.
 
 ### Prototype questions
@@ -287,7 +224,7 @@ Mermaid rendering likely needs a WebView/JS or export pipeline decision. Keep th
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Longer-term Mermaid feature: generate flowcharts from columns, cards, labels, due-date risk, or project workflow structure.
 
 ### Generation ideas
@@ -305,7 +242,7 @@ Longer-term Mermaid feature: generate flowcharts from columns, cards, labels, du
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Large feature because it needs file reference policy, missing-file recovery, Markdown conventions, and preview UI.
 
 ### Design decisions
@@ -322,7 +259,7 @@ Large feature because it needs file reference policy, missing-file recovery, Mar
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Security-sensitive roadmap item. Needs a threat model, recovery story, key handling, and cross-platform behavior.
 
 ### Security planning
@@ -339,7 +276,7 @@ Security-sensitive roadmap item. Needs a threat model, recovery story, key handl
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Beyond smoke testing, each platform needs packaging, signing, permissions, and install/update QA.
 
 ### Release channels
@@ -357,7 +294,7 @@ Beyond smoke testing, each platform needs packaging, signing, permissions, and i
 
 ### Notes
 
-#### 2026-05-10T12:00:00-07:00
+#### 2026-05-10T14:00:00-05:00
 Powerful but architecture-shaping. This should wait until the local-first safety model is more mature.
 
 ### Architecture questions
@@ -365,3 +302,95 @@ Powerful but architecture-shaping. This should wait until the local-first safety
 - [ ] Define what plugins can read/write
 - [ ] Keep all automation local-first by default
 - [ ] Add permission boundaries and recovery behavior
+
+# Archive
+
+## Finish macOS release readiness
+> kanoli:id 22222222-2222-4222-8222-222222222223
+> kanoli:priority A
+> kanoli:labels macos, release, packaging
+
+_Summary: Finish the unsigned public beta release path for Kanoli 0.6.0 Beta._
+
+**Status:** DMG built and release notes prepared; clean-profile install smoke remains open.
+**Decision:** Ship the public beta unsigned, with the signed/notarized path documented as a future release upgrade.
+
+### Notes
+
+#### 2026-05-10T14:00:00-05:00
+Target release is Kanoli 0.6.0 Beta as an unsigned public beta DMG. The signed/notarized Apple Developer ID path is documented as a future upgrade, not a blocker for this beta.
+
+#### 2026-05-10T15:40:00-05:00
+Built and verified Kanoli-0.6.0-beta.dmg. The macOS bundle reports version 0.6.0 build 1; the beta label is carried by the release name, tag, and DMG filename.
+
+### Release checklist
+> kanoli:checklist 22222222-2222-4222-8222-222222222224
+- [x] Confirm build artifact version and release naming
+- [x] Add signing and notarization workflow notes
+- [ ] Smoke install on a clean macOS user profile
+- [x] Prepare public release notes
+
+## Implement human-readable Markdown v2
+> kanoli:id 66666666-6666-4666-8666-666666666661
+> kanoli:priority A
+> kanoli:labels markdown, compatibility
+
+_Summary: Replace compact machine-oriented saves with a readable Markdown board format._
+
+**Status:** Implemented as the baseline readable format.
+**Compatibility:** Legacy compact Markdown remains readable and migrates to v2 on save.
+
+### Notes
+
+#### 2026-05-10T16:10:00-05:00
+Implement readable Kanoli Markdown v2 as the default save format while keeping legacy compact Markdown readable.
+
+### Markdown v2 rollout
+> kanoli:checklist 66666666-6666-4666-8666-666666666662
+- [x] Serialize clean card headings with kanoli metadata blockquote lines
+- [x] Parse readable v2 notes and Markdown task-list checklists
+- [x] Keep legacy compact Markdown parsing compatible
+- [x] Add migration and round-trip tests
+
+## Reconcile roadmap and hardening documentation
+> kanoli:id 22222222-2222-4222-8222-222222222221
+> kanoli:priority A
+> kanoli:labels docs, phase3
+
+_Summary: Bring the planning documents into alignment with the completed Phase 3 signoff._
+
+**Status:** Completed.
+**Decision:** Keep historical hardening records, but remove stale in-progress language where it misleads planning.
+
+### Notes
+
+#### 2026-05-10T14:00:00-05:00
+PHASE3_SIGNOFF says Phase 3 is complete, but the production hardening plan/checklist still contain older in-progress language and unchecked exit rows.
+
+### Doc cleanup
+> kanoli:checklist 22222222-2222-4222-8222-222222222222
+- [x] Update Phase 3 plan status to signed off
+- [x] Resolve unchecked hardening checklist exit criteria or explain accepted limitations
+- [x] Replace old KanoliDartBuild paths with current KanoliDart paths where appropriate
+
+## Confirm macOS-first Phase 3 baseline
+> kanoli:id 11111111-1111-4111-8111-111111111111
+> kanoli:priority A
+> kanoli:labels docs, phase3, release
+
+_Summary: KanoliDart is the current release baseline, with macOS hardening complete._
+
+**Status:** Baseline confirmed and documented.
+**Decision:** Treat the Flutter/Dart app as the active product track while preserving Swift context for reference.
+
+### Notes
+
+#### 2026-05-10T14:00:00-05:00
+KanoliDart is the active Flutter rebuild. Core feature parity is complete, Phase 2 macOS smoke passed, and Phase 3 macOS hardening is signed off.
+
+### Baseline evidence
+> kanoli:checklist 11111111-1111-4111-8111-111111111112
+- [x] flutter analyze passes
+- [x] flutter test passes
+- [x] Both KanoliDart and KanoliSwift git statuses are clean
+- [x] Reconcile stale docs that still say Phase 3 is in progress

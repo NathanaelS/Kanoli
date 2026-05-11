@@ -1,3 +1,5 @@
+// Reads and writes card-scoped todo.txt sidecar files while preserving todo
+// lines owned by other cards or external tools.
 import 'dart:io';
 
 import '../../domain/board/board_entities.dart';
@@ -20,6 +22,8 @@ class TodoBoardStore {
   final SafeFileStore _safeFileStore;
 
   String defaultTodoListPath({required String boardFilePath}) {
+    // Sidecar todo lists live beside the board by default and use the board
+    // filename so users can recognize them outside Kanoli.
     final boardFile = File(boardFilePath);
     final directory = boardFile.parent.path;
     final filename = _sanitizeTodoListFilename(
@@ -59,6 +63,8 @@ class TodoBoardStore {
     final otherLines = <String>[];
     final rawLines = text.split('\n').toList();
 
+    // Keep non-card lines untouched so Kanoli can share a todo.txt file with
+    // manual entries or other card-scoped tasks.
     if (text.endsWith('\n') || text.endsWith('\r\n')) {
       rawLines.removeLast();
     }
@@ -99,6 +105,8 @@ class TodoBoardStore {
     required String cardId,
     String? columnContext,
   }) {
+    // Rebuild only the current card's lines and append them after preserved
+    // external lines.
     final currentCardLines = currentCardItems
         .where((TodoListEntry item) => item.text.trim().isNotEmpty)
         .map(
@@ -125,7 +133,10 @@ class TodoBoardStore {
       columnContext: columnContext,
     );
 
-    _safeFileStore.writeTextAtomic(targetPath: todoListPath, content: serialized);
+    _safeFileStore.writeTextAtomic(
+      targetPath: todoListPath,
+      content: serialized,
+    );
   }
 
   void deleteTodoList(String todoListPath) {
@@ -137,6 +148,7 @@ class TodoBoardStore {
     String cardId,
     String? columnContext,
   ) {
+    // Strip stale card/column tags before writing the current association.
     final parts = item.todoLine
         .split(' ')
         .where(

@@ -1,7 +1,10 @@
+// Serializes board columns to the readable Kanoli Markdown v2.1 format.
 import '../../domain/board/board_entities.dart';
 
 class MarkdownBoardSerializer {
   String serialize(List<BoardColumn> columns) {
+    // The save format favors clean Markdown sections with machine metadata in
+    // namespaced blockquotes.
     final lines = <String>[];
 
     for (final column in columns) {
@@ -39,6 +42,8 @@ class MarkdownBoardSerializer {
   }
 
   void _addBody(List<String> lines, BoardItem item) {
+    // Body prose is optional human-authored Markdown between metadata and
+    // structured Notes/checklist sections.
     final body = item.bodyMarkdown.trimRight();
     if (body.isEmpty) {
       return;

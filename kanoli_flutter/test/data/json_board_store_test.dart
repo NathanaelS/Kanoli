@@ -1,3 +1,4 @@
+// Covers Kanoli JSON and Trello JSON import behavior.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kanoli_flutter/data/board/json_board_store.dart';
 import 'package:kanoli_flutter/domain/board/board_entities.dart';

@@ -1,8 +1,12 @@
+// Parses legacy compact Markdown, readable v2 Markdown, and v2.1 card bodies
+// into board columns.
 import '../../domain/board/board_entities.dart';
 import 'markdown_board_parser_helpers.dart';
 
 class MarkdownBoardParser {
   List<BoardColumn> parse(String markdown) {
+    // Parser state tracks the current card plus the active readable section.
+    // Unsectioned card text becomes bodyMarkdown.
     final parsedColumns = <BoardColumn>[];
     BoardColumn? currentColumn;
     int? currentItemIndex;
@@ -43,6 +47,7 @@ class MarkdownBoardParser {
     for (final rawLine in markdown.split('\n')) {
       final line = rawLine.trim();
 
+      // Card and column headings reset nested note/checklist state.
       final itemTitle = headerContent(line, 2);
       if (itemTitle != null) {
         trimCurrentNote();
@@ -112,6 +117,8 @@ class MarkdownBoardParser {
       if (currentItemIndex != null &&
           noteLine != null &&
           currentColumn != null) {
+        // Blockquote lines can be v2 metadata, legacy notes/checklists, or
+        // normal Markdown body blockquotes.
         final kanoliMetadata = parseKanoliMetadata(noteLine);
         if (kanoliMetadata != null) {
           if (kanoliMetadata.key == 'checklist') {
@@ -182,6 +189,8 @@ class MarkdownBoardParser {
       if (currentColumn != null &&
           currentItemIndex != null &&
           currentSection == _ReadableSection.notes) {
+        // Notes keep their original Markdown line breaks until the next
+        // heading starts a different section.
         if (line.isEmpty && currentNoteIndex == null) {
           continue;
         }

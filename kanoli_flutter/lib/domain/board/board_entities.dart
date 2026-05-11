@@ -1,3 +1,4 @@
+// Core board domain model used by storage, filtering, and the board UI.
 import 'board_formatters.dart';
 
 export 'board_formatters.dart';
@@ -21,6 +22,8 @@ class BoardFilter {
   bool get isActive => dueDateRule != DueDateRule.any || labels.isNotEmpty;
 
   bool matches(BoardItem item) {
+    // Filters are additive: a card must match the due-date rule and all chosen
+    // labels to appear in filtered results.
     return _matchesDueDate(item.dueDate) && _containsAll(labels, item.labels);
   }
 
@@ -117,6 +120,8 @@ class BoardItem {
   }
 
   BoardItem duplicatedWithNewIds() {
+    // Duplicates keep user-authored content but receive fresh IDs for the card
+    // and nested checklist/note records.
     return BoardItem(
       title: title,
       bodyMarkdown: bodyMarkdown,
@@ -195,6 +200,8 @@ class TodoListEntry {
     required bool isCompleted,
     String? id,
   }) {
+    // Parses the subset of todo.txt syntax Kanoli edits directly: completion
+    // date, priority, text, and due date.
     final parts = line
         .split(' ')
         .where((String value) => value.isNotEmpty)

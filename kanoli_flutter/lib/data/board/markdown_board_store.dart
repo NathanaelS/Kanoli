@@ -1,3 +1,4 @@
+// Facade for reading and writing Kanoli Markdown board files.
 import 'dart:io';
 
 import '../../domain/board/board_entities.dart';

@@ -1,3 +1,4 @@
+// Writes app events to debug output and the diagnostics store.
 import 'package:flutter/foundation.dart';
 
 import '../config/app_environment.dart';
@@ -30,6 +31,7 @@ class AppLogger {
     StackTrace? stackTrace,
     Map<String, Object?> metadata = const <String, Object?>{},
   }) {
+    // Keep error details in metadata so exported logs remain easy to scan.
     final fullMetadata = <String, Object?>{
       ...metadata,
       if (error != null) 'error': error.toString(),
