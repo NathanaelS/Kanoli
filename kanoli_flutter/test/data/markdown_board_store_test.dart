@@ -10,6 +10,7 @@ void main() {
       final store = MarkdownBoardStore();
       final dueDate = TodoDateFormatter.tryParse('2026-04-16')!;
       final noteDate = DateTime.parse('2026-04-13T12:30:00-07:00');
+      final formattedNoteDate = NoteDateFormatter.format(noteDate);
 
       final columns = <BoardColumn>[
         BoardColumn(
@@ -42,6 +43,26 @@ void main() {
       final filePath = _tempFilePath('.md');
       store.save(columns: columns, filePath: filePath);
 
+      expect(File(filePath).readAsStringSync(), '''
+# Doing
+
+## Test Item
+> kanoli:id 11111111-1111-1111-1111-111111111111
+> kanoli:priority A
+> kanoli:labels AI, more-testing
+> kanoli:due 2026-04-16
+
+### Notes
+
+#### $formattedNoteDate
+First note
+
+### Launch
+> kanoli:checklist 22222222-2222-2222-2222-222222222222
+- [ ] Write tests
+- [x] Ship
+''');
+
       final result = store.loadBoard(filePath);
       final loadedItem = result.columns.first.items.first;
 
@@ -71,6 +92,76 @@ void main() {
         <bool>[false, true],
       );
     });
+
+    test(
+      'parses readable v2 markdown with metadata, notes, and checklists',
+      () {
+        final store = MarkdownBoardStore();
+        final filePath = _tempFilePath('.md');
+        File(filePath).writeAsStringSync('''
+# Next Up
+
+## Finish release
+> kanoli:id 11111111-1111-1111-1111-111111111111
+> kanoli:priority A
+> kanoli:labels release, macos
+> kanoli:due 2026-05-10
+
+### Notes
+
+#### 2026-05-10T12:00:00-07:00
+First note line
+Second note line
+
+#### 2026-05-10T13:40:00-07:00
+Second note
+
+### Release checklist
+> kanoli:checklist 22222222-2222-2222-2222-222222222222
+- [x] Confirm version
+- [ ] Smoke install
+
+# Done
+
+## Completed card
+> kanoli:id 33333333-3333-3333-3333-333333333333
+''');
+
+        final result = store.loadBoard(filePath);
+        final item = result.columns.first.items.first;
+
+        expect(result.errorMessage, isNull);
+        expect(
+          result.columns.map((BoardColumn column) => column.title),
+          <String>['Next Up', 'Done'],
+        );
+        expect(item.id, '11111111-1111-1111-1111-111111111111');
+        expect(item.title, 'Finish release');
+        expect(item.priority, 'A');
+        expect(item.labels, <String>['release', 'macos']);
+        expect(TodoDateFormatter.format(item.dueDate!), '2026-05-10');
+        expect(item.notes.length, 2);
+        expect(item.notes.first.text, 'First note line\nSecond note line');
+        expect(item.notes.last.text, 'Second note');
+        expect(
+          item.checklists.single.id,
+          '22222222-2222-2222-2222-222222222222',
+        );
+        expect(item.checklists.single.title, 'Release checklist');
+        expect(
+          item.checklists.single.items.map(
+            (BoardChecklistItem item) => item.text,
+          ),
+          <String>['Confirm version', 'Smoke install'],
+        );
+        expect(
+          item.checklists.single.items.map(
+            (BoardChecklistItem item) => item.isDone,
+          ),
+          <bool>[true, false],
+        );
+      },
+    );
 
     test('parses legacy checklist items', () {
       final store = MarkdownBoardStore();
@@ -146,7 +237,8 @@ void main() {
         (BoardColumn column) => column.title == 'Second column',
       );
       final item = secondColumn.items.firstWhere(
-        (BoardItem boardItem) => boardItem.id == '1DE4336D-075E-4870-8CC5-168635CEEF16',
+        (BoardItem boardItem) =>
+            boardItem.id == '1DE4336D-075E-4870-8CC5-168635CEEF16',
       );
 
       expect(result.errorMessage, isNull);
@@ -156,6 +248,44 @@ void main() {
       expect(TodoDateFormatter.format(item.dueDate!), '2026-04-13');
       expect(item.notes.length, 2);
       expect(item.checklists.single.items.length, 4);
+    });
+
+    test('migrates legacy compact markdown to readable v2 on serialize', () {
+      final store = MarkdownBoardStore();
+      const legacyMarkdown = '''
+# Doing
+## (A) Thing 47 +Bug-Report due:2026-04-13 id:1DE4336D-075E-4870-8CC5-168635CEEF16
+> note:2026-04-11T20:40:06-07:00 Legacy note
+> checklist:20323199-5C5C-4DD5-A1BF-CAF95390327C Launch
+> checklist-item:20323199-5C5C-4DD5-A1BF-CAF95390327C:[ ] Check 1
+> checklist-item:20323199-5C5C-4DD5-A1BF-CAF95390327C:[x] Check 2
+''';
+
+      final parsedLegacy = store.parse(legacyMarkdown);
+      final serialized = store.serialize(parsedLegacy);
+
+      expect(serialized, contains('## Thing 47'));
+      expect(
+        serialized,
+        contains('> kanoli:id 1DE4336D-075E-4870-8CC5-168635CEEF16'),
+      );
+      expect(serialized, contains('> kanoli:priority A'));
+      expect(serialized, contains('> kanoli:labels Bug-Report'));
+      expect(serialized, contains('- [ ] Check 1'));
+      expect(serialized, contains('- [x] Check 2'));
+
+      final reparsed = store.parse(serialized);
+      final item = reparsed.single.items.single;
+
+      expect(item.id, '1DE4336D-075E-4870-8CC5-168635CEEF16');
+      expect(item.title, 'Thing 47');
+      expect(item.priority, 'A');
+      expect(item.labels, <String>['Bug-Report']);
+      expect(TodoDateFormatter.format(item.dueDate!), '2026-04-13');
+      expect(item.notes.single.text, 'Legacy note');
+      expect(item.checklists.single.id, '20323199-5C5C-4DD5-A1BF-CAF95390327C');
+      expect(item.checklists.single.items.length, 2);
+      expect(item.checklists.single.items.last.isDone, isTrue);
     });
   });
 }
