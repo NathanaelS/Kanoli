@@ -56,7 +56,7 @@ When a request depends on recency (e.g., "latest", "current", "today", "as of no
 
 ## Important rules
 
-* Build modular first. No code files longer than 300 lines of code! Documentation, plans etc. can be as long as needed, but code files must be modular. 
+* Build modular first. No code files longer than 300 lines of code! Documentation, plans etc. can be as long as needed, but code files must be modular. Comments that are not read by AI do not count towards the 300 line limit.
 * Think ahead! Do not write code that you know will need to be changed later without planning for that change now. So keep entrypoints stable and isolate logic into smaller modules from the start!
 * Do not limit yourself due to the LOC limit! If a task requires more code, split it into multiple files/modules/functions
 * Do not add default fallbacks during development phase. Is something fails, let it fail, so we can fix it!

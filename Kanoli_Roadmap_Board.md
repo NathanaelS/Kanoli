@@ -163,6 +163,14 @@ When a note is archived, it should be timestamped.
 #### 2026-05-10T21:43:24-05:00
 Having the edit field permanently up is ugly.
 
+## View tab bar
+> kanoli:id ca825d87-ece4-b1b7-c066-8664fd3566d8
+
+### Notes
+
+#### 2026-05-10T22:18:43-05:00
+It toggles a different bar and not the tabs you would expect.
+
 # Mermaid Integration
 
 ## Preserve Mermaid fenced code blocks in notes
