@@ -1,3 +1,5 @@
+// Keeps recent app diagnostics in memory and mirrors them to a small rotating
+// support log.
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +20,7 @@ class DiagnosticsStore {
     final logDir = Directory('${supportDir.path}/diagnostics');
     logDir.createSync(recursive: true);
 
+    // Keep one active log plus one rotated copy.
     final primary = File('${logDir.path}/kanoli.log');
     final rotated = File('${logDir.path}/kanoli.log.1');
     if (primary.existsSync() && primary.lengthSync() > _maxBytes) {
@@ -37,7 +40,9 @@ class DiagnosticsStore {
   List<String> get recentEntries => List<String>.unmodifiable(_recentEntries);
 
   List<String> get recentErrors => _recentEntries
-      .where((String entry) => entry.contains('[ERROR]') || entry.contains('[WARN]'))
+      .where(
+        (String entry) => entry.contains('[ERROR]') || entry.contains('[WARN]'),
+      )
       .toList(growable: false);
 
   void record(String line) {
@@ -50,6 +55,8 @@ class DiagnosticsStore {
     if (file == null) {
       return;
     }
+
+    // Diagnostics must not interrupt the board workflow.
     try {
       file.writeAsStringSync('$line\n', mode: FileMode.append, flush: true);
     } on FileSystemException {
@@ -57,10 +64,7 @@ class DiagnosticsStore {
     }
   }
 
-  String exportText({
-    String? activeBoardPath,
-    String? activeTodoPath,
-  }) {
+  String exportText({String? activeBoardPath, String? activeTodoPath}) {
     final buffer = StringBuffer()
       ..writeln('Kanoli Diagnostics Export')
       ..writeln('activeBoardPath=${activeBoardPath ?? "<none>"}')

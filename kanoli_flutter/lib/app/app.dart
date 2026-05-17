@@ -1,3 +1,5 @@
+// App shell for Kanoli: owns session state, file access, routing, theme, and
+// startup recovery.
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,8 +37,12 @@ class _KanoliAppState extends State<KanoliApp> {
   @override
   void initState() {
     super.initState();
+
+    // Keep one board session controller alive for the window lifetime.
     _sessionController = BoardSessionController(logger: widget.logger);
     _fileAccessService = DefaultBoardFileAccessService();
+
+    // Session restoration is asynchronous so the app can render immediately.
     unawaited(_restoreSessionAfterNativeStartup());
     unawaited(_markStartupCompleted());
     if (widget.previousStartupIncomplete) {

@@ -1,3 +1,4 @@
+// Handles board file selection and save-location selection across platforms.
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -25,6 +26,7 @@ class DefaultBoardFileAccessService implements BoardFileAccessService {
 
   @override
   Future<String?> pickOpenBoardPath() async {
+    // macOS uses the native channel for security-scoped access.
     if (Platform.isMacOS) {
       return _pickFileViaNativeDialog('openBoard');
     }
@@ -53,6 +55,7 @@ class DefaultBoardFileAccessService implements BoardFileAccessService {
   Future<BoardImportSelection?> pickImportBoardSelection({
     required String suggestedBoardName,
   }) async {
+    // Import requires a source JSON file and a destination Markdown board.
     if (Platform.isMacOS) {
       final jsonPath = await _pickFileViaNativeDialog('openJson');
       if (jsonPath == null || jsonPath.trim().isEmpty) {

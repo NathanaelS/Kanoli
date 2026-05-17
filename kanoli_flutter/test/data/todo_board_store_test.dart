@@ -1,3 +1,4 @@
+// Covers card-scoped todo.txt parsing, serialization, and file operations.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

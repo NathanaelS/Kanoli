@@ -1,3 +1,5 @@
+// Defines Kanoli's dark visual system, shared color tokens, gradients, and
+// Material theme overrides.
 import 'package:flutter/material.dart';
 
 enum AuraIntensity { subtle, vivid }
@@ -25,6 +27,7 @@ class AuraVisualProfile {
 }
 
 abstract final class AppTheme {
+  // Core palette used by app chrome, board panels, cards, and status accents.
   static const Color background = Color(0xFF15141B);
   static const Color backgroundSoft = Color(0xFF15141B);
   static const Color foreground = Color(0xFFBDBDBD);
@@ -88,29 +91,17 @@ abstract final class AppTheme {
       end: Alignment.bottomRight,
     ),
     startupPanelGradient: LinearGradient(
-      colors: <Color>[
-        Color(0xCC2A223B),
-        Color(0xCC1B1D2C),
-        Color(0xCC202A3A),
-      ],
+      colors: <Color>[Color(0xCC2A223B), Color(0xCC1B1D2C), Color(0xCC202A3A)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     columnPanelGradient: LinearGradient(
-      colors: <Color>[
-        Color(0x238464C6),
-        Color(0xCC191923),
-        Color(0x1F3C746E),
-      ],
+      colors: <Color>[Color(0x238464C6), Color(0xCC191923), Color(0x1F3C746E)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     itemCardGradient: LinearGradient(
-      colors: <Color>[
-        Color(0x258464C6),
-        Color(0x803D375E),
-        Color(0x1E4BA88A),
-      ],
+      colors: <Color>[Color(0x258464C6), Color(0x803D375E), Color(0x1E4BA88A)],
     ),
     addColumnButtonGradient: LinearGradient(
       colors: <Color>[Color(0x4D8464C6), Color(0x3554C59F)],
@@ -148,6 +139,8 @@ abstract final class AppTheme {
   static final ThemeData darkAura = _buildDarkAura();
 
   static ThemeData _buildDarkAura() {
+    // Material components derive from the same palette so custom board UI and
+    // built-in controls stay visually aligned.
     final colorScheme =
         ColorScheme.fromSeed(
           seedColor: primary,
@@ -195,18 +188,19 @@ abstract final class AppTheme {
           side: const BorderSide(color: outline),
         ),
       ),
-      chipTheme: ChipThemeData.fromDefaults(
-        brightness: Brightness.dark,
-        secondaryColor: primary,
-        labelStyle: const TextStyle(
-          color: foreground,
-          fontWeight: FontWeight.w600,
-        ),
-      ).copyWith(
-        backgroundColor: surfaceElevated,
-        selectedColor: primary,
-        side: const BorderSide(color: outline),
-      ),
+      chipTheme:
+          ChipThemeData.fromDefaults(
+            brightness: Brightness.dark,
+            secondaryColor: primary,
+            labelStyle: const TextStyle(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
+          ).copyWith(
+            backgroundColor: surfaceElevated,
+            selectedColor: primary,
+            side: const BorderSide(color: outline),
+          ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: foreground,

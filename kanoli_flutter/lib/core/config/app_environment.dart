@@ -1,3 +1,4 @@
+// Build-time environment label used by logging and diagnostics.
 enum AppEnvironment {
   dev,
   staging,

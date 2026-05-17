@@ -1,3 +1,5 @@
+// Coordinates open board tabs, board edits, filtering, persistence, session
+// restore, and cross-board card moves.
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
@@ -85,6 +87,8 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> restoreSessionIfAvailable() async {
+    // Restore remembered tabs, skip missing files, and select the last active
+    // board when possible.
     _prefs ??= await SharedPreferences.getInstance();
     final rememberTouched =
         _prefs!.getBool(_rememberSessionTouchedKey) ?? false;
@@ -92,10 +96,10 @@ class BoardSessionController extends ChangeNotifier {
     if (!rememberTouched && storedRemember == false) {
       _rememberSessionOnLaunch = true;
       await _prefs!.setBool(_rememberSessionKey, true);
-      logger.warning(
-        'rememberSessionPreferenceMigrated',
-        <String, Object?>{'from': false, 'to': true},
-      );
+      logger.warning('rememberSessionPreferenceMigrated', <String, Object?>{
+        'from': false,
+        'to': true,
+      });
     } else {
       _rememberSessionOnLaunch = storedRemember ?? true;
     }
@@ -206,6 +210,8 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   List<BoardColumn> filteredResultsColumns() {
+    // Group matches by board and column so cross-board search keeps its source
+    // context.
     if (!_boardFilter.isActive) {
       return <BoardColumn>[];
     }
@@ -315,6 +321,8 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> openBoard(String path) async {
+    // Opening a board selects or creates its tab and refreshes its todo sidecar
+    // path.
     final normalizedPath = File(path).absolute.path;
     final loadResult = _markdownBoardStore.loadBoard(normalizedPath);
 
@@ -354,6 +362,7 @@ class BoardSessionController extends ChangeNotifier {
     required String jsonPath,
     required String boardPath,
   }) async {
+    // JSON imports are converted to Markdown immediately.
     final normalizedJsonPath = File(jsonPath).absolute.path;
     final normalizedBoardPath = File(boardPath).absolute.path;
 
@@ -424,6 +433,7 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> persistBoard({bool notify = true}) async {
+    // Only the selected tab is saved here; other open boards remain on disk.
     final activePath = activeBoardPath;
     if (activePath == null) {
       return;
@@ -490,6 +500,8 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   void reorderItemWithinColumn(String columnId, int oldIndex, int newIndex) {
+    // Flutter reports the target index after removal; moving down needs one
+    // index adjustment.
     final columnIndex = _columns.indexWhere(
       (BoardColumn column) => column.id == columnId,
     );
@@ -640,6 +652,7 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> moveItemToBoard(String itemId, String boardPath) async {
+    // Append to the target board before removing from the active board.
     final item = _itemById(itemId);
     if (item == null) {
       return;
@@ -660,6 +673,7 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> copyItemToBoard(String itemId, String boardPath) async {
+    // Copies receive fresh IDs so each board owns an independent card.
     final item = _itemById(itemId);
     if (item == null) {
       return;
@@ -683,6 +697,7 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   void archiveItem(String itemId) {
+    // Archive is a normal column named "Archive" in the Markdown file.
     String? archiveColumnId;
     final existingArchive = _columns.where(_isArchiveColumn).firstOrNull;
 
@@ -869,6 +884,7 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> _persistSessionState() async {
+    // Session state stores file paths only; board content stays in board files.
     _prefs ??= await SharedPreferences.getInstance();
 
     if (!_rememberSessionOnLaunch) {
@@ -885,6 +901,7 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   Future<void> _syncActiveTodoPathForBoard(String boardPath) async {
+    // Each board remembers its own optional todo sidecar path.
     _prefs ??= await SharedPreferences.getInstance();
     final normalizedBoardPath = File(boardPath).absolute.path;
     final key = 'kanoli.todo.path.v1::$normalizedBoardPath';

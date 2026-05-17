@@ -1,4 +1,7 @@
-import 'dart:math';
+// Core board domain model used by storage, filtering, and the board UI.
+import 'board_formatters.dart';
+
+export 'board_formatters.dart';
 
 class BoardLoadResult {
   BoardLoadResult({required this.columns, this.errorMessage});
@@ -19,6 +22,8 @@ class BoardFilter {
   bool get isActive => dueDateRule != DueDateRule.any || labels.isNotEmpty;
 
   bool matches(BoardItem item) {
+    // Filters are additive: a card must match the due-date rule and all chosen
+    // labels to appear in filtered results.
     return _matchesDueDate(item.dueDate) && _containsAll(labels, item.labels);
   }
 
@@ -81,6 +86,7 @@ class BoardItem {
     required this.title,
     List<BoardNote>? notes,
     List<BoardChecklist>? checklists,
+    this.bodyMarkdown = '',
     this.dueDate,
     this.priority,
     List<String>? labels,
@@ -92,6 +98,7 @@ class BoardItem {
 
   final String id;
   String title;
+  String bodyMarkdown;
   List<BoardNote> notes;
   List<BoardChecklist> checklists;
   DateTime? dueDate;
@@ -113,8 +120,11 @@ class BoardItem {
   }
 
   BoardItem duplicatedWithNewIds() {
+    // Duplicates keep user-authored content but receive fresh IDs for the card
+    // and nested checklist/note records.
     return BoardItem(
       title: title,
+      bodyMarkdown: bodyMarkdown,
       notes: notes
           .map(
             (BoardNote note) =>
@@ -190,6 +200,8 @@ class TodoListEntry {
     required bool isCompleted,
     String? id,
   }) {
+    // Parses the subset of todo.txt syntax Kanoli edits directly: completion
+    // date, priority, text, and due date.
     final parts = line
         .split(' ')
         .where((String value) => value.isNotEmpty)
@@ -260,63 +272,5 @@ class TodoListEntry {
     }
 
     return parts.join(' ');
-  }
-}
-
-abstract final class TodoDateFormatter {
-  static DateTime? tryParse(String value) {
-    final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
-    if (match == null) {
-      return null;
-    }
-
-    final year = int.parse(match.group(1)!);
-    final month = int.parse(match.group(2)!);
-    final day = int.parse(match.group(3)!);
-    return DateTime(year, month, day);
-  }
-
-  static String format(DateTime value) {
-    final year = value.year.toString().padLeft(4, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final day = value.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
-}
-
-abstract final class NoteDateFormatter {
-  static DateTime? tryParse(String value) {
-    return DateTime.tryParse(value);
-  }
-
-  static String format(DateTime value) {
-    final local = value.toLocal();
-    final year = local.year.toString().padLeft(4, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    final day = local.day.toString().padLeft(2, '0');
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    final second = local.second.toString().padLeft(2, '0');
-
-    final offset = local.timeZoneOffset;
-    final sign = offset.isNegative ? '-' : '+';
-    final abs = offset.abs();
-    final offsetHours = abs.inHours.toString().padLeft(2, '0');
-    final offsetMinutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
-
-    return '$year-$month-${day}T$hour:$minute:$second$sign$offsetHours:$offsetMinutes';
-  }
-}
-
-abstract final class IdGenerator {
-  static final Random _random = Random.secure();
-
-  static String uuid() {
-    String hex(int length) => List<int>.generate(
-      length,
-      (_) => _random.nextInt(16),
-    ).map((int value) => value.toRadixString(16)).join();
-
-    return '${hex(8)}-${hex(4)}-${hex(4)}-${hex(4)}-${hex(12)}';
   }
 }

@@ -1,3 +1,5 @@
+// Covers board session behavior: movement, tabs, filtering, imports, and
+// remembered-session recovery.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -101,10 +103,12 @@ void main() {
     final colA = controller.columns.firstWhere(
       (BoardColumn c) => c.id == colAId,
     );
-    expect(
-      colA.items.map((BoardItem i) => i.id),
-      <String>['item-2', 'item-1', 'item-3', 'item-4'],
-    );
+    expect(colA.items.map((BoardItem i) => i.id), <String>[
+      'item-2',
+      'item-1',
+      'item-3',
+      'item-4',
+    ]);
   });
 
   test('archives item and auto-creates Archive column', () async {
@@ -286,20 +290,23 @@ void main() {
     expect(File(outputBoard).existsSync(), isFalse);
   });
 
-  test('openBoard returns file-not-found error for missing board path', () async {
-    final missingPath = _tempPath('_not_found.md');
-    if (File(missingPath).existsSync()) {
-      File(missingPath).deleteSync();
-    }
+  test(
+    'openBoard returns file-not-found error for missing board path',
+    () async {
+      final missingPath = _tempPath('_not_found.md');
+      if (File(missingPath).existsSync()) {
+        File(missingPath).deleteSync();
+      }
 
-    final controller = BoardSessionController(logger: logger);
-    await controller.openBoard(missingPath);
+      final controller = BoardSessionController(logger: logger);
+      await controller.openBoard(missingPath);
 
-    expect(controller.lastError, isNotNull);
-    expect(controller.lastError, contains('Unable to open file'));
-    expect(controller.lastError, contains('File not found.'));
-    expect(controller.hasActiveBoard, isFalse);
-  });
+      expect(controller.lastError, isNotNull);
+      expect(controller.lastError, contains('Unable to open file'));
+      expect(controller.lastError, contains('File not found.'));
+      expect(controller.hasActiveBoard, isFalse);
+    },
+  );
 }
 
 String _tempPath(String suffix) {

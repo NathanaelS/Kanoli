@@ -1,3 +1,4 @@
+// Smoke test for the startup shell shown before a board is opened.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kanoli_flutter/app/app.dart';
 import 'package:kanoli_flutter/core/config/app_environment.dart';
