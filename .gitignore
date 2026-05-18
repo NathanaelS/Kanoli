@@ -1,0 +1,8 @@
+# Visual Studio user caches and indexes.
+.vs/
+
+# Visual Studio CMake output generated from opening the Flutter Windows project.
+kanoli_flutter/windows/out/
+
+# Local Kanoli backup snapshots generated while exercising the app.
+kanoli_flutter/.kanoli_backups/

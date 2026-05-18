@@ -1,0 +1,18 @@
+# Normalize text files to LF in this repository.
+* text=auto eol=lf
+
+# Binary files should not be line-ending normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.db binary
+*.sqlite binary
+*.vsidx binary
