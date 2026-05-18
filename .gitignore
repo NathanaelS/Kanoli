@@ -6,3 +6,34 @@ kanoli_flutter/windows/out/
 
 # Local Kanoli backup snapshots generated while exercising the app.
 kanoli_flutter/.kanoli_backups/
+
+# macOS Finder and filesystem metadata.
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
+.TemporaryItems/
+.DocumentRevisions-V100/
+.VolumeIcon.icns
+Icon?
+*.icloud
+
+# Xcode/macOS local user state.
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+
+# macOS release/build artifacts.
+kanoli_flutter/dist/dmg-src/
+kanoli_flutter/dist/*.dmg
+kanoli_flutter/dist/*.dmg.zip
+kanoli_flutter/dist/*.pkg
