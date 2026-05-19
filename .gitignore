@@ -32,8 +32,5 @@ Icon?
 *.pbxuser
 *.perspectivev3
 
-# macOS release/build artifacts.
-kanoli_flutter/dist/dmg-src/
-kanoli_flutter/dist/*.dmg
-kanoli_flutter/dist/*.dmg.zip
-kanoli_flutter/dist/*.pkg
+# Local release/build artifacts. Publish these through releases, not Git.
+kanoli_flutter/dist/
