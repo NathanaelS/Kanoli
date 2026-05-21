@@ -1,0 +1,69 @@
+name: Bug report
+description: Report something that is broken or behaving unexpectedly.
+title: "Bug: "
+labels:
+  - type:bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make Kanoli sturdier. Include a sample board only if it is safe to share.
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: Describe the behavior you thought should happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior, including any visible error messages.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps that reproduces the issue.
+      placeholder: |
+        1. Open...
+        2. Click...
+        3. See...
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - iOS
+        - Android
+        - Multiple platforms
+        - Unknown
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Kanoli version or branch
+      placeholder: "Example: main, dev, 0.6 beta"
+  - type: input
+    id: flutter-version
+    attributes:
+      label: Flutter version
+      placeholder: "Example: 3.41.9"
+  - type: textarea
+    id: board-file
+    attributes:
+      label: Sample board details
+      description: Paste a minimal sample or describe the board shape if the real file is private.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Add screenshots, logs, or anything else that may help.

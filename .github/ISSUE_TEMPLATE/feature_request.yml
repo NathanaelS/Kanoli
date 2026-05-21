@@ -1,0 +1,61 @@
+name: Feature request
+description: Suggest a new capability or improvement.
+title: "Feature: "
+labels:
+  - type:feature
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: User goal
+      description: What are you trying to do in Kanoli?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed behavior
+      description: Describe the feature or workflow you want.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - All
+        - macOS
+        - Windows
+        - Linux
+        - iOS
+        - Android
+        - Unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Markdown
+        - todo.txt
+        - UI
+        - Import
+        - Storage
+        - Build
+        - Release
+        - Docs
+        - Not sure
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Local-first compatibility
+      description: Does this change affect Markdown, todo.txt sidecars, file portability, or round-tripping?
+  - type: textarea
+    id: done
+    attributes:
+      label: Done criteria
+      description: What would make this feel complete?
+      placeholder: |
+        - [ ] ...
+        - [ ] ...

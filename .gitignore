@@ -1,0 +1,36 @@
+# Visual Studio user caches and indexes.
+.vs/
+
+# Visual Studio CMake output generated from opening the Flutter Windows project.
+kanoli_flutter/windows/out/
+
+# Local Kanoli backup snapshots generated while exercising the app.
+kanoli_flutter/.kanoli_backups/
+
+# macOS Finder and filesystem metadata.
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
+.TemporaryItems/
+.DocumentRevisions-V100/
+.VolumeIcon.icns
+Icon?
+*.icloud
+
+# Xcode/macOS local user state.
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+
+# Local release/build artifacts. Publish these through releases, not Git.
+kanoli_flutter/dist/

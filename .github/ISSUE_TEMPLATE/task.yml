@@ -1,0 +1,52 @@
+name: Task
+description: Track implementation, verification, release, or project chores.
+title: "Task: "
+labels:
+  - type:task
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why does this task matter?
+    validations:
+      required: true
+  - type: dropdown
+    id: task-type
+    attributes:
+      label: Task type
+      options:
+        - Implementation
+        - Verification
+        - Release
+        - Research
+        - Documentation
+        - Maintenance
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - A
+        - B
+        - C
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Break the task into concrete steps.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: What should be checked before this is considered done?

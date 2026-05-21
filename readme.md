@@ -1,6 +1,6 @@
 # Kanoli
 
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20iOS%20%7C%20Android-lightgrey)](#build-options)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20iOS%20%7C%20Android-lightgrey)](#quick-start)
 [![Storage](https://img.shields.io/badge/storage-Markdown%20%2B%20todo.txt-2ea44f)](#kanoli)
 [![UI](https://img.shields.io/badge/UI-Flutter%20%2F%20Dart-02569B?logo=flutter&logoColor=white)](#kanoli)
 [![Release](https://img.shields.io/badge/release-macOS%20.dmg-2ea44f)](#quick-start)
@@ -21,13 +21,13 @@ And now, begin the AI generated paragraphs edited by me.......
 
 ## Quick Start
 
-I currently have a MacOS file available for download. Download the latest `.dmg` from the GitHub Releases page when it is published, install Kanoli, and open the app normally.
+I currently have a macOS file available for download. Download the latest `.dmg` from the [GitHub Releases page](https://github.com/NathanaelS/Kanoli/releases), install Kanoli, and open the app normally.
 
 If macOS blocks launch, go to **System Settings > Privacy & Security** and allow Kanoli to open.
 
 ## Dev Branch
 
-If you want to have cool features that aren't available on the main release, and potentially have a broken app at times, you can clone the Dev Branch and build off of that. I am NOT releasing dev versions, so this will require VS Code and the Flutter SDK on your machine.
+If you want to have cool features that aren't available on the main release, and potentially have a broken app at times, you can clone the [dev branch](https://github.com/NathanaelS/Kanoli/tree/dev) and build off of that. I am NOT releasing dev versions, so this will require VS Code and the Flutter SDK on your machine.
 
 
 ## Local-First Data Model (Or "My stuff is my stuff")
@@ -53,7 +53,9 @@ Open an issue in this repository and include:
 - Your platform and Flutter version
 - Any sample board file, if safe to share
 
-Issue tracker: [GitHub Issues](https://github.com/NathanaelS/KanoliDart/issues)
+Issue tracker: [GitHub Issues](https://github.com/NathanaelS/Kanoli/issues)
+
+Project tracking format and issue template examples live in [.github/PROJECT_LAYOUT.md](.github/PROJECT_LAYOUT.md). The local roadmap board is still the human-readable source for broad planning, while GitHub Issues are for specific bugs, tasks, and feature requests.
 
 ## Contributing
 
