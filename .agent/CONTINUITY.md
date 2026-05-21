@@ -14,6 +14,8 @@
 
 ## [PROGRESS]
 
+- 2026-05-21T10:06:05-0700 [TOOL] Used local `gh` with `project` scope to configure existing GitHub Project `NathanaelS/Kanoli` project #1, link it to the repo, add issues #3-#21, and populate Project v2 fields.
+- 2026-05-21T09:37:39-0700 [TOOL] Migrated active `Kanoli_Roadmap_Board.md` cards to GitHub issues in `NathanaelS/Kanoli` as issues #3-#21; skipped roadmap cards already fully implemented/completed except the archived macOS beta card with an open clean-profile smoke check.
 - 2026-05-21T09:20:06-0700 [CODE] Updated README repository links to `NathanaelS/Kanoli` and added GitHub tracking docs/templates under `.github/`.
 - 2026-05-11T02:13:26Z [TOOL] Read `AGENTS.md`; `.agent/CONTINUITY.md` was missing and created.
 - 2026-05-11T02:35:00Z [CODE] Split Markdown persistence into facade/parser/parser helpers/serializer modules, moved board formatters into `board_formatters.dart`, and added `BoardItem.bodyMarkdown`.
@@ -40,6 +42,8 @@
 
 ## [OUTCOMES]
 
+- 2026-05-21T10:06:05-0700 [TOOL] Kanoli GitHub Project is public at `https://github.com/users/NathanaelS/projects/1` with 19 roadmap issues, custom fields Type/Priority/Platform/Area/Source/Target, default Status values, and a short project readme; `gh` does not expose saved Project view creation.
+- 2026-05-21T09:37:39-0700 [TOOL] Created public-facing GitHub roadmap issues #3-#21 with source card IDs, summaries, checklists, and suggested project fields in the issue bodies; GitHub Projects v2 field assignment was not available through the connector.
 - 2026-05-21T09:20:06-0700 [CODE] Added documentation-only GitHub project layout and issue forms for bug reports, feature requests, and tasks; no remote GitHub project or issue changes were made.
 - 2026-05-11T02:58:00Z [CODE] Markdown v2.1 implemented: parser/serializer preserve optional `BoardItem.bodyMarkdown`, legacy compact/current v2 reads remain compatible, and the roadmap board now uses selective body prose.
 - 2026-05-11T02:58:00Z [TOOL] Verification passed: `dart format`, `flutter analyze`, full `flutter test`, and targeted roadmap body parser test.
