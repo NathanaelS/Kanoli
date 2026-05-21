@@ -14,6 +14,7 @@
 
 ## [PROGRESS]
 
+- 2026-05-21T09:20:06-0700 [CODE] Updated README repository links to `NathanaelS/Kanoli` and added GitHub tracking docs/templates under `.github/`.
 - 2026-05-11T02:13:26Z [TOOL] Read `AGENTS.md`; `.agent/CONTINUITY.md` was missing and created.
 - 2026-05-11T02:35:00Z [CODE] Split Markdown persistence into facade/parser/parser helpers/serializer modules, moved board formatters into `board_formatters.dart`, and added `BoardItem.bodyMarkdown`.
 - 2026-05-11T02:35:00Z [CODE] Updated roadmap board with a Markdown v2.1 tracking card and selective body prose on active roadmap cards.
@@ -39,6 +40,7 @@
 
 ## [OUTCOMES]
 
+- 2026-05-21T09:20:06-0700 [CODE] Added documentation-only GitHub project layout and issue forms for bug reports, feature requests, and tasks; no remote GitHub project or issue changes were made.
 - 2026-05-11T02:58:00Z [CODE] Markdown v2.1 implemented: parser/serializer preserve optional `BoardItem.bodyMarkdown`, legacy compact/current v2 reads remain compatible, and the roadmap board now uses selective body prose.
 - 2026-05-11T02:58:00Z [TOOL] Verification passed: `dart format`, `flutter analyze`, full `flutter test`, and targeted roadmap body parser test.
 - 2026-05-11T03:42:00Z [CODE] Added concise human-facing file summaries to all Dart source/test files and section comments around major app, persistence, controller, and editor flows.
