@@ -14,6 +14,10 @@
 
 ## [PROGRESS]
 
+- 2026-05-24T11:00:33-0700 [TOOL] Added and populated GitHub Project `Roadmap Week` values for issues #3-#21, then created a saved `Weekly Board` board view grouped into weekly columns.
+- 2026-05-24T10:27:29-0700 [TOOL] Added GitHub Project date fields `Start Date` and `Target Date`, then populated issues #3-#21 around a v1 release goal of 2026-06-14.
+- 2026-05-24T10:19:52-0700 [TOOL] Added GitHub Project `Timeframe` field with build-order buckets and populated `Target`/`Timeframe` for issues #3-#21 in `NathanaelS/Kanoli`.
+- 2026-05-24T10:08:49-0700 [TOOL] Created GitHub labels `Feature`, `Research`, and `Task`, renamed default `bug` to `Bug`, and applied title-prefix labels to roadmap issues #3-#21 in `NathanaelS/Kanoli`.
 - 2026-05-21T10:06:05-0700 [TOOL] Used local `gh` with `project` scope to configure existing GitHub Project `NathanaelS/Kanoli` project #1, link it to the repo, add issues #3-#21, and populate Project v2 fields.
 - 2026-05-21T09:37:39-0700 [TOOL] Migrated active `Kanoli_Roadmap_Board.md` cards to GitHub issues in `NathanaelS/Kanoli` as issues #3-#21; skipped roadmap cards already fully implemented/completed except the archived macOS beta card with an open clean-profile smoke check.
 - 2026-05-21T09:20:06-0700 [CODE] Updated README repository links to `NathanaelS/Kanoli` and added GitHub tracking docs/templates under `.github/`.
@@ -42,6 +46,10 @@
 
 ## [OUTCOMES]
 
+- 2026-05-24T11:00:33-0700 [TOOL] `Weekly Board` now shows week columns by start date: Week of May 24 has 6 items (#3, #4, #10, #12, #13, #21), Week of May 31 has 4, Week of Jun 7 has 3, Week of Jun 14 has 3, Week of Jun 28 has 1, Week of Jul 5 has 1, and Week of Jul 19 has 1.
+- 2026-05-24T10:27:29-0700 [TOOL] Kanoli GitHub Project timeline now spans 2026-05-24 through 2026-07-31: beta cleanup through 2026-06-01, v1 foundation/polish through 2026-06-10, v1 release process 2026-06-11..2026-06-14, and post-v1/later work after 2026-06-15.
+- 2026-05-24T10:19:52-0700 [TOOL] Roadmap Project ordering now uses `Now`, `Beta Cleanup`, `v1.0 Foundation`, `v1.0 Polish`, `Post-v1.0`, and `Later`; targets are `Beta`, `v1.0`, or `Later`.
+- 2026-05-24T10:08:49-0700 [TOOL] Verified issues #3-#21 each have exactly one title-prefix GitHub label: `Task`, `Feature`, `Bug`, or `Research`.
 - 2026-05-21T10:06:05-0700 [TOOL] Kanoli GitHub Project is public at `https://github.com/users/NathanaelS/projects/1` with 19 roadmap issues, custom fields Type/Priority/Platform/Area/Source/Target, default Status values, and a short project readme; `gh` does not expose saved Project view creation.
 - 2026-05-21T09:37:39-0700 [TOOL] Created public-facing GitHub roadmap issues #3-#21 with source card IDs, summaries, checklists, and suggested project fields in the issue bodies; GitHub Projects v2 field assignment was not available through the connector.
 - 2026-05-21T09:20:06-0700 [CODE] Added documentation-only GitHub project layout and issue forms for bug reports, feature requests, and tasks; no remote GitHub project or issue changes were made.
