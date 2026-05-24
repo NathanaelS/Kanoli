@@ -1,104 +1,147 @@
-<!-- ## Accuracy, recency, and sourcing (REQUIRED)
+# AGENTS.md
 
-When a request depends on recency (e.g., "latest", "current", "today", "as of now"):
+## Project Identity
 
-1. **Establish the current date/time** and state it explicitly in ISO format.
-   - Preferred: `date -Is` (timestamp).
+Kanoli is a local-first Flutter/Dart kanban app focused on:
+- human-readable Markdown board files
+- optional `todo.txt` interoperability
+- offline-first workflows
+- user ownership of data
+- cross-platform support
 
-2. **Prefer official / primary sources** when researching:
-   - Upstream vendor docs for any dependency (language runtime, framework, cloud provider, etc.)
+Core principles:
+- Preserve local-first behavior.
+- Preserve Markdown readability and compatibility.
+- Preserve stable board/card serialization.
+- Avoid unnecessary complexity.
+- Do not add cloud sync, telemetry, analytics, account systems, or network services unless explicitly requested.
 
-3. **Prefer the most recent authoritative information**:
-   - Use the newest versioned docs, release notes, or changelogs.
-   - Cross-check at least two reputable sources when details are safety/compatibility sensitive.
- -->
-<!-- ### Context7 MCP
+## Repository Layout
 
-- Use Context7 when you need library/API docs.
-- If known, pin the library with slash syntax (e.g., `use library /supabase/supabase`).
-- Mention the target version.
-- Fetch minimal targeted docs; summarize (no large dumps). -->
+Primary Flutter workspace:
+- `kanoli_flutter/`
 
-<!-- ### Web search policy
+Common directories:
+- `kanoli_flutter/lib/app/`
+- `kanoli_flutter/lib/core/`
+- `kanoli_flutter/lib/domain/board/`
+- `kanoli_flutter/lib/data/board/`
+- `kanoli_flutter/lib/features/board/`
+- `kanoli_flutter/test/`
 
-- Enable and use web search only when it materially improves correctness (e.g., up-to-date APIs, recent advisories, release notes).
-- Prefer official docs and primary sources; otherwise use Context7 MCP or reputable, widely-cited references.
-- Record source dates (publish/release dates) when relevant.
- -->
-<!-- ## Default autonomy and safety -->
+## Read Only What Is Needed
 
-<!-- - Default to read-only exploration and analysis.
-- When edits are needed, prefer **workspace-scoped** write access and keep changes inside the repo.
-- When interacting with remote APIs, you must use READ-only calls, unless explicitily instructed otherwise by the user. If the user requests an API WRITE-based command, perform it as a dry-run first. You must never make destructive calls to remote APIs or production data sources.
- -->
+Default to focused inspection.
 
-### Editing files
+Before broad repo exploration:
+1. identify the likely files or directories
+2. inspect those first
+3. expand only when evidence requires it
+
+Do not scan the entire repository for small, localized tasks unless the prompt explicitly asks for a repo-wide audit.
+
+## Editing Rules
 
 - Make the smallest safe change that solves the issue.
 - Preserve existing style and conventions.
-- Prefer patch-style edits (small, reviewable diffs) over full-file rewrites.
-- After making changes, run the project’s standard checks when feasible (format/lint, unit tests, build/typecheck).
-- Feature toggles/configuration are mandatory for runtime‑conditional behavior.
-- Long‑running tooling must run with timeouts/non‑interactive flags. 
-- No dead code: remove unused fields/methods/usings and scaffolding when no longer used. 
+- Prefer patch-style edits over full-file rewrites.
+- Keep diffs small and reviewable.
+- Avoid unnecessary formatting churn.
+- Do not rename files, symbols, or modules unless required.
+- Remove dead code and unused scaffolding when no longer needed.
+- Long-running tooling must use timeouts/non-interactive flags when available.
 
-<!-- ### Reading project documents (PDFs, uploads, long text, CSVs, etc)
+## Modularity
 
-- Read the full document first.
-- Draft the output.
-- **Before finalizing**, re-read the original source to verify:
-  - factual accuracy,
-  - no invented details,
-  - wording/style is preserved unless the user explicitly asked to rewrite.
-- If paraphrasing is required, label it explicitly as a paraphrase. -->
+- Prefer code files under 300 lines when practical.
+- Do not split files mechanically just to satisfy a line count.
+- Extract only clear responsibilities.
+- Avoid tiny abstraction files that make the code harder to follow.
+- Documentation, plans, fixtures, and generated reports may exceed 300 lines.
 
+## Development Behavior
 
+- Do not add silent default fallbacks during development.
+- If something fails, let it fail clearly so it can be fixed correctly.
+- Do not leave empty `try`/`catch` blocks.
+- Feature toggles/configuration are mandatory for runtime-conditional behavior.
+- Prefer open-source and self-hosted libraries when appropriate.
+- Ask before introducing major third-party dependencies.
+- Design UI for the end-user, not for the schema.
 
-## Important rules
+## Flutter / Dart Checks
 
-* Build modular first. No code files longer than 300 lines of code! Documentation, plans etc. can be as long as needed, but code files must be modular. Comments that are not read by AI do not count towards the 300 line limit.
-* Think ahead! Do not write code that you know will need to be changed later without planning for that change now. So keep entrypoints stable and isolate logic into smaller modules from the start!
-* Do not limit yourself due to the LOC limit! If a task requires more code, split it into multiple files/modules/functions
-* Do not add default fallbacks during development phase. Is something fails, let it fail, so we can fix it!
-* Do not leavy empty try-catch blocks anywhere!
-* Do not reinvent the wheel! Use open source, self-hosted libraries when needed. Ask the user, and help them qualify their selection. 
-* Design UI for the end-user, not for the schema! 
+Run from `kanoli_flutter/`:
 
+```bash
+dart format .
+flutter analyze
+flutter test
+```
 
-### Secrets and sensitive data
+If checks cannot be run:
+- state why
+- state what remains unverified
 
-- Never print secrets (tokens, private keys, credentials) to terminal output.
-- Do not request users paste secrets.
-- Avoid commands that might expose secrets (e.g., dumping env vars broadly, `cat ~/.ssh/*`).
-- Prefer existing authenticated CLIs; redact sensitive strings in any displayed output.
+## Local File Compatibility
 
+Kanoli's core value is local, human-readable data.
 
-## CONTINUITY.md (REQUIRED)
+Do not break:
+- Markdown board structure
+- card IDs
+- metadata serialization
+- checklist/note serialization
+- companion `BoardName.todo.txt` behavior
+- Trello JSON import compatibility
+- offline operation
 
-Maintain a single continuity file for the current workspace: `.agent/CONTINUITY.md`.
+Any change to parsing, serialization, import/export, persistence, or migration logic must include focused tests, fixtures, or clearly documented manual validation.
 
-- `.agent/CONTINUITY.md` is a living document and canonical briefing designed to survive compaction; do not rely on earlier chat/tool output unless it's reflected there.
+## Role-Specific Guidance
 
-- At the start of each assistant turn: read `.agent/CONTINUITY.md` before acting.
+Load only the relevant file for the current task:
+- Planning: `docs/agents/planner.md`
+- Execution: `docs/agents/executor.md`
+- Review: `docs/agents/reviewer.md`
+- Debugging: `docs/agents/debugger.md`
+- Testing: `docs/agents/tester.md`
 
+Do not load every role file by default.
 
-### File Format
+## Project Context Files
 
-Update `.agent/CONTINUITY.md` only when there is a meaningful delta in:
+Use only when relevant:
+- Architecture: `docs/project-context/architecture.md`
+- Markdown format: `docs/project-context/markdown-format.md`
+- Persistence: `docs/project-context/persistence.md`
+- Flutter state/UI: `docs/project-context/flutter-state-ui.md`
+- Trello import: `docs/project-context/trello-import.md`
 
-  - `[PLANS]`: "Plans Log" is a guide for the next contributor as much as checklists for you.
-  - `[DECISIONS]`: "Decisions Log" is used to record all decisions made.
-  - `[PROGRESS]`: "Progress Log" is used to record course changes mid-implementation, documenting why and reflecting upon the implications.
-  - `[DISCOVERIES]`: "Discoveries Log" is for when when you discover optimizer behavior, performance tradeoffs, unexpected bugs, or inverse/unapply semantics that shaped your approach, capture those observations with short evidence snippets (test output is ideal.
-  - `[OUTCOMES]`: "Outcomes Log" is used at completion of a major task or the full plan, summarizing what was achieved, what remains, and lessons learned.
+## Continuity
 
-### Anti-drift / anti-bloat rules
+Maintain `.agent/CONTINUITY.md` for meaningful project deltas only.
 
-- Facts only, no transcripts, no raw logs.
-- Every entry must include:
-  - a date in ISO timestamp (e.g., `2026-01-13T09:42Z`)
-  - a provenance tag: `[USER]`, `[CODE]`, `[TOOL]`, `[ASSUMPTION]`
-  - If unknown, write `UNCONFIRMED` (never guess). If something changes, supersede it explicitly (don't silently rewrite history).
-- Keep the file bounded, short and high-signal (anti-bloat). 
-- If sections begin to become bloated, compress older items into milestone (`[MILESTONE]`) bullets.
-  
+At the start of a substantial task:
+- read `.agent/CONTINUITY.md` if it exists
+
+Update it when:
+- a plan changes
+- an architecture decision is made
+- a compatibility rule is discovered
+- meaningful progress occurs
+- a task completes with remaining risks
+
+Do not update it for:
+- typo fixes
+- formatting-only changes
+- obvious one-file edits
+- trivial refactors
+
+## Secrets and Sensitive Data
+
+- Never print secrets, tokens, private keys, or credentials.
+- Do not ask the user to paste secrets.
+- Avoid commands that dump broad environment/config data.
+- Prefer existing authenticated CLIs.
+- Redact sensitive strings in displayed output.
