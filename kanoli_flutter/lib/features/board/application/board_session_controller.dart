@@ -57,6 +57,7 @@ class BoardSessionController extends ChangeNotifier {
 
   BoardFilter _boardFilter = BoardFilter();
   bool _showArchiveOnly = false;
+  bool _showBoardTabBar = true;
   bool _rememberSessionOnLaunch = true;
   SharedPreferences? _prefs;
   static const String _sessionKey = 'kanoli.session.v1';
@@ -77,6 +78,7 @@ class BoardSessionController extends ChangeNotifier {
 
   BoardFilter get boardFilter => _boardFilter;
   bool get showArchiveOnly => _showArchiveOnly;
+  bool get showBoardTabBar => _showBoardTabBar;
   bool get rememberSessionOnLaunch => _rememberSessionOnLaunch;
 
   bool get hasActiveBoard => activeBoardPath != null;
@@ -318,6 +320,19 @@ class BoardSessionController extends ChangeNotifier {
   void toggleArchiveVisibility() {
     _showArchiveOnly = !_showArchiveOnly;
     notifyListeners();
+  }
+
+  void setBoardTabBarVisibility(bool value) {
+    if (_showBoardTabBar == value) {
+      return;
+    }
+
+    _showBoardTabBar = value;
+    notifyListeners();
+  }
+
+  void toggleBoardTabBarVisibility() {
+    setBoardTabBarVisibility(!_showBoardTabBar);
   }
 
   Future<void> openBoard(String path) async {
@@ -718,6 +733,7 @@ class BoardSessionController extends ChangeNotifier {
     _selectedTabId = null;
     _boardFilter = BoardFilter();
     _showArchiveOnly = false;
+    _showBoardTabBar = true;
     _missingSessionPaths = <String>[];
     _activeTodoPath = null;
     _clearError();

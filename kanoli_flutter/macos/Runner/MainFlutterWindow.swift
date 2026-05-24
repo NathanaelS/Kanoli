@@ -8,6 +8,9 @@ class MainFlutterWindow: NSWindow {
   private let bookmarkStoreKey = "kanoli.securityScopedBookmarks.v1"
 
   override func awakeFromNib() {
+    NSWindow.allowsAutomaticWindowTabbing = false
+    self.tabbingMode = .disallowed
+
     let flutterViewController = FlutterViewController()
     let windowFrame = self.frame
     self.contentViewController = flutterViewController

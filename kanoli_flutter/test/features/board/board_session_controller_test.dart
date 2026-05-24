@@ -135,6 +135,21 @@ void main() {
     expect(archive.items.map((BoardItem i) => i.id), <String>['item-1']);
   });
 
+  test('toggles board tab bar visibility without affecting session tabs', () {
+    final controller = BoardSessionController(logger: logger);
+
+    expect(controller.showBoardTabBar, isTrue);
+
+    controller.toggleBoardTabBarVisibility();
+
+    expect(controller.showBoardTabBar, isFalse);
+    expect(controller.boardTabs, isEmpty);
+
+    controller.setBoardTabBarVisibility(true);
+
+    expect(controller.showBoardTabBar, isTrue);
+  });
+
   test('builds filtered cross-board results across open tabs', () async {
     final boardA = _tempPath('_a.md');
     final boardB = _tempPath('_b.md');
@@ -271,6 +286,25 @@ void main() {
     expect(restored.boardTabs.length, 1);
     expect(restored.activeBoardPath, keepBoard);
     expect(restored.columns.first.title, 'Keep');
+  });
+
+  test('clearSession restores board tab bar visibility to default', () async {
+    final boardPath = _tempPath('_clear.md');
+    markdownStore.save(
+      filePath: boardPath,
+      columns: <BoardColumn>[BoardColumn(title: 'Clear')],
+    );
+
+    final controller = BoardSessionController(logger: logger);
+    await controller.openBoard(boardPath);
+    controller.toggleBoardTabBarVisibility();
+
+    expect(controller.showBoardTabBar, isFalse);
+
+    controller.clearSession();
+
+    expect(controller.showBoardTabBar, isTrue);
+    expect(controller.boardTabs, isEmpty);
   });
 
   test('importJsonBoard surfaces parse errors without crashing', () async {

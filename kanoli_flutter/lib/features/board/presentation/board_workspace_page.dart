@@ -44,6 +44,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final TextEditingController _newItemTitleController = TextEditingController();
   final FocusNode _newColumnTitleFocusNode = FocusNode();
   final FocusNode _newItemTitleFocusNode = FocusNode();
+  final FocusNode _boardTabRowFocusNode = FocusNode();
   bool _dialogInProgress = false;
   bool _missingSessionPromptVisible = false;
   static const String _confirmDeleteColumnPrefKey =
@@ -59,6 +60,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     _newItemTitleController.dispose();
     _newColumnTitleFocusNode.dispose();
     _newItemTitleFocusNode.dispose();
+    _boardTabRowFocusNode.dispose();
     super.dispose();
   }
 
@@ -67,7 +69,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     // The workspace listens to the session controller and redraws around the
     // latest active board state.
     final visuals = AppTheme.visuals(_auraIntensity);
-    final body = ListenableBuilder(
+    return ListenableBuilder(
       listenable: widget.controller,
       builder: (BuildContext context, Widget? child) {
         _showErrorIfNeeded(context);
@@ -185,210 +187,213 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           ),
         );
 
-        return scaffold;
-      },
-    );
+        if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
+          return scaffold;
+        }
 
-    if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
-      return body;
-    }
-
-    return PlatformMenuBar(
-      menus: <PlatformMenuItem>[
-        PlatformMenu(
-          label: 'Kanoli',
+        return PlatformMenuBar(
           menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.about,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.about,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.servicesSubmenu,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.servicesSubmenu,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.hide,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.hide,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.hideOtherApplications,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.hideOtherApplications,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.showAllApplications,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.showAllApplications,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.quit,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.quit,
-                  ),
-              ],
-            ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'File',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Create Board',
-                  onSelected: () => unawaited(_createBoard()),
-                ),
-                PlatformMenuItem(
-                  label: 'Open Board',
-                  onSelected: () => unawaited(_openBoard()),
-                ),
-                PlatformMenuItem(
-                  label: 'Import Trello JSON',
-                  onSelected: () => unawaited(_importBoard()),
-                ),
-                PlatformMenuItem(
-                  label: 'Close Active Board',
-                  onSelected: () => unawaited(_closeSelectedTab()),
-                ),
-                PlatformMenuItem(
-                  label: 'Close Window',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyW,
-                    meta: true,
-                  ),
-                  onSelected: () => unawaited(_hideWindowViaNative()),
+            PlatformMenu(
+              label: 'Kanoli',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.about,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.about,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.servicesSubmenu,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.servicesSubmenu,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.hide,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.hide,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.hideOtherApplications,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.hideOtherApplications,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.showAllApplications,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.showAllApplications,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.quit,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.quit,
+                      ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'View',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Show Kanoli Window',
-                  onSelected: () => unawaited(_showWindowViaNative()),
-                ),
-              ],
-            ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'Tools',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Privacy Settings',
-                  onSelected: () => unawaited(_openPrivacySettings()),
-                ),
-                PlatformMenuItem(
-                  label: 'Diagnostics',
-                  onSelected: () => unawaited(_openDiagnosticsPanel()),
-                ),
-                PlatformMenuItem(
-                  label: 'Reveal Active Board in Finder',
-                  onSelected: () => unawaited(_revealActiveBoardInFinder()),
-                ),
-                PlatformMenuItem(
-                  label: 'Copy Active Board Path',
-                  onSelected: () => unawaited(_copyActiveBoardPath()),
-                ),
-              ],
-            ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'Edit',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Undo',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyZ,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const UndoTextIntent(SelectionChangedCause.keyboard),
-                  ),
-                ),
-                PlatformMenuItem(
-                  label: 'Redo',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyZ,
-                    shift: true,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const RedoTextIntent(SelectionChangedCause.keyboard),
-                  ),
-                ),
-                PlatformMenuItem(
-                  label: 'Cut',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyX,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const CopySelectionTextIntent.cut(
-                      SelectionChangedCause.keyboard,
+            PlatformMenu(
+              label: 'File',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: 'Create Board',
+                      onSelected: () => unawaited(_createBoard()),
                     ),
-                  ),
+                    PlatformMenuItem(
+                      label: 'Open Board',
+                      onSelected: () => unawaited(_openBoard()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Import Trello JSON',
+                      onSelected: () => unawaited(_importBoard()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Close Active Board',
+                      onSelected: () => unawaited(_closeSelectedTab()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Close Window',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyW,
+                        meta: true,
+                      ),
+                      onSelected: () => unawaited(_hideWindowViaNative()),
+                    ),
+                  ],
                 ),
-                PlatformMenuItem(
-                  label: 'Copy',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyC,
-                    meta: true,
-                  ),
-                  onSelected: () =>
-                      Actions.invoke(context, CopySelectionTextIntent.copy),
+              ],
+            ),
+            PlatformMenu(
+              label: 'View',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: widget.controller.showBoardTabBar
+                          ? 'Hide Tab Bar'
+                          : 'Show Tab Bar',
+                      onSelected: () =>
+                          unawaited(_toggleBoardTabBarVisibility()),
+                    ),
+                  ],
                 ),
-                PlatformMenuItem(
-                  label: 'Paste',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyV,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const PasteTextIntent(SelectionChangedCause.keyboard),
-                  ),
+              ],
+            ),
+            PlatformMenu(
+              label: 'Tools',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: 'Privacy Settings',
+                      onSelected: () => unawaited(_openPrivacySettings()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Diagnostics',
+                      onSelected: () => unawaited(_openDiagnosticsPanel()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Reveal Active Board in Finder',
+                      onSelected: () =>
+                          unawaited(_revealActiveBoardInFinder()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Copy Active Board Path',
+                      onSelected: () => unawaited(_copyActiveBoardPath()),
+                    ),
+                  ],
                 ),
-                PlatformMenuItem(
-                  label: 'Select All',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyA,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const SelectAllTextIntent(SelectionChangedCause.keyboard),
-                  ),
+              ],
+            ),
+            PlatformMenu(
+              label: 'Edit',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: 'Undo',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyZ,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const UndoTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Redo',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyZ,
+                        shift: true,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const RedoTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Cut',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyX,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const CopySelectionTextIntent.cut(
+                          SelectionChangedCause.keyboard,
+                        ),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Copy',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyC,
+                        meta: true,
+                      ),
+                      onSelected: () =>
+                          Actions.invoke(context, CopySelectionTextIntent.copy),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Paste',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyV,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const PasteTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Select All',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyA,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const SelectAllTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ],
-        ),
-      ],
-      child: body,
+          child: scaffold,
+        );
+
+      },
     );
   }
 
@@ -478,31 +483,35 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
     return Column(
       children: <Widget>[
-        if (tabs.isNotEmpty)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: tabs.map((BoardTabState tab) {
-                final isSelected = tab.id == selectedTabId;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(tab.title),
-                    selected: isSelected,
-                    backgroundColor: AppTheme.selection,
-                    selectedColor: AppTheme.secondary,
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? AppTheme.background
-                          : AppTheme.foreground,
-                      fontWeight: FontWeight.w600,
+        if (widget.controller.showBoardTabBar && tabs.isNotEmpty)
+          Focus(
+            focusNode: _boardTabRowFocusNode,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: tabs.map((BoardTabState tab) {
+                  final isSelected = tab.id == selectedTabId;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(tab.title),
+                      selected: isSelected,
+                      backgroundColor: AppTheme.selection,
+                      selectedColor: AppTheme.secondary,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? AppTheme.background
+                            : AppTheme.foreground,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      side: const BorderSide(color: AppTheme.outline),
+                      onSelected: (_) =>
+                          widget.controller.selectBoardTab(tab.id),
                     ),
-                    side: const BorderSide(color: AppTheme.outline),
-                    onSelected: (_) => widget.controller.selectBoardTab(tab.id),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         if (widget.controller.isFilterActive)
@@ -1212,6 +1221,26 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     } on PlatformException {
       // Ignore on unsupported hosts.
     }
+  }
+
+  Future<void> _toggleBoardTabBarVisibility() async {
+    final shouldShow = !widget.controller.showBoardTabBar;
+    if (shouldShow) {
+      await _showWindowViaNative();
+    }
+
+    widget.controller.toggleBoardTabBarVisibility();
+
+    if (!shouldShow) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _boardTabRowFocusNode.requestFocus();
+    });
   }
 
   Future<void> _createBoard() async {

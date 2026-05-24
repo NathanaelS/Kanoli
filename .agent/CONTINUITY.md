@@ -11,9 +11,13 @@
 - 2026-05-11T02:13:26Z [USER] Readable v2.1 body prose is human-only Markdown convention, not separate status/decision schema fields.
 - 2026-05-11T02:13:26Z [CODE] `AGENTS.md` requires touched code files to stay under 300 lines and continuity to be maintained in `.agent/CONTINUITY.md`.
 - 2026-05-11T03:26:00Z [USER] Human comments do not count toward the 300 LOC code limit; keep comments concise and avoid unnecessary paragraphs.
+- 2026-05-24T23:00:05Z [CODE] macOS board-tab behavior is now owned by the Flutter View menu and board tab row; native AppKit window tabbing remains disabled so no second native tab strip can appear.
 
 ## [PROGRESS]
 
+- 2026-05-24T23:00:05Z [CODE] Disabled AppKit automatic window tabbing in `MainFlutterWindow.swift`, then updated `board_workspace_page.dart` so the macOS View menu toggles Kanoli's own board tab row (`Hide Tab Bar` / `Show Tab Bar`).
+- 2026-05-24T23:00:05Z [TOOL] Verification passed after the macOS tabbing/menu change: `flutter test test/features/board/board_session_controller_test.dart` and `flutter analyze`.
+- 2026-05-24T11:38:27-0700 [TOOL] Created GitHub milestones for the roadmap timeline and assigned issues #3-#21 to the matching delivery buckets.
 - 2026-05-24T11:00:33-0700 [TOOL] Added and populated GitHub Project `Roadmap Week` values for issues #3-#21, then created a saved `Weekly Board` board view grouped into weekly columns.
 - 2026-05-24T10:27:29-0700 [TOOL] Added GitHub Project date fields `Start Date` and `Target Date`, then populated issues #3-#21 around a v1 release goal of 2026-06-14.
 - 2026-05-24T10:19:52-0700 [TOOL] Added GitHub Project `Timeframe` field with build-order buckets and populated `Target`/`Timeframe` for issues #3-#21 in `NathanaelS/Kanoli`.
@@ -46,6 +50,8 @@
 
 ## [OUTCOMES]
 
+- 2026-05-24T23:00:05Z [TOOL] Native macOS tabbing suppression completed and the Flutter board tab row now has an explicit View-menu visibility action; no changes were made to Markdown, persistence, or board serialization.
+- 2026-05-24T11:38:27-0700 [TOOL] GitHub milestones now track the roadmap: `Beta Cleanup` due 2026-06-01 with 4 issues, `v1.0 Foundation` due 2026-06-07 with 4, `v1.0 Polish` due 2026-06-10 with 3, `v1.0 Release` due 2026-06-14 with 2, `Post-v1.0 Enhancements` due 2026-06-30 with 3, and `Later Roadmap` due 2026-07-31 with 3.
 - 2026-05-24T11:00:33-0700 [TOOL] `Weekly Board` now shows week columns by start date: Week of May 24 has 6 items (#3, #4, #10, #12, #13, #21), Week of May 31 has 4, Week of Jun 7 has 3, Week of Jun 14 has 3, Week of Jun 28 has 1, Week of Jul 5 has 1, and Week of Jul 19 has 1.
 - 2026-05-24T10:27:29-0700 [TOOL] Kanoli GitHub Project timeline now spans 2026-05-24 through 2026-07-31: beta cleanup through 2026-06-01, v1 foundation/polish through 2026-06-10, v1 release process 2026-06-11..2026-06-14, and post-v1/later work after 2026-06-15.
 - 2026-05-24T10:19:52-0700 [TOOL] Roadmap Project ordering now uses `Now`, `Beta Cleanup`, `v1.0 Foundation`, `v1.0 Polish`, `Post-v1.0`, and `Later`; targets are `Beta`, `v1.0`, or `Later`.
