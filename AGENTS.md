@@ -118,7 +118,7 @@ Use only when relevant:
 - Flutter state/UI: `docs/project-context/flutter-state-ui.md`
 - Trello import: `docs/project-context/trello-import.md`
 
-## Continuity
+<!-- ## Continuity
 
 Maintain `.agent/CONTINUITY.md` for meaningful project deltas only.
 
@@ -136,7 +136,79 @@ Do not update it for:
 - typo fixes
 - formatting-only changes
 - obvious one-file edits
+- trivial refactors -->
+
+## CONTINUITY.md (REQUIRED)
+
+Maintain a single continuity file for the current workspace:
+
+`.agent/CONTINUITY.md`
+
+`.agent/CONTINUITY.md` is a living project briefing intended to survive compaction and context resets.
+
+At the start of each assistant turn:
+- read `.agent/CONTINUITY.md` before acting
+
+Update `.agent/CONTINUITY.md` only when there is a meaningful project delta.
+
+Do NOT update it for:
+- tiny typo fixes
+- formatting-only changes
+- obvious one-file edits
 - trivial refactors
+
+## Continuity File Sections
+
+### [PLANS]
+Implementation plans and phased work guidance.
+
+### [DECISIONS]
+Architecture or workflow decisions and rationale.
+
+### [PROGRESS]
+Meaningful implementation progress or course corrections.
+
+### [DISCOVERIES]
+Important findings:
+- optimizer behavior
+- performance tradeoffs
+- parser behavior
+- compatibility edge cases
+- unexpected bugs
+- implementation constraints
+
+### [OUTCOMES]
+Summaries of completed work:
+- what changed
+- remaining risks
+- lessons learned
+- follow-up work
+
+## Continuity Anti-Drift Rules
+
+- Facts only
+- No transcripts
+- No raw logs
+- Keep entries concise and high-signal
+
+Every entry must include:
+- ISO timestamp
+- provenance tag:
+  - `[USER]`
+  - `[CODE]`
+  - `[TOOL]`
+  - `[ASSUMPTION]`
+
+If unknown:
+- write `UNCONFIRMED`
+- never guess
+
+If something changes:
+- supersede explicitly
+- do not silently rewrite history
+
+If sections become bloated:
+- compress older items into milestone summaries
 
 ## Secrets and Sensitive Data
 
