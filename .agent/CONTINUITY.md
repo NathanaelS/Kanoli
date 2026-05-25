@@ -15,6 +15,10 @@
 
 ## [PROGRESS]
 
+- 2026-05-24T23:52:49Z [CODE] Refined archive history output so archived cards get inline body prose (`Archived at <timestamp>`) instead of a timestamp-only note heading.
+- 2026-05-24T23:52:49Z [TOOL] Re-verified the archive behavior with `flutter test test/features/board/board_session_controller_test.dart` after the format tweak.
+- 2026-05-24T23:40:04Z [CODE] Updated archive behavior so archiving a card inserts a timestamped `BoardNote` reading `Moved to Archive` before saving the card into the Archive column.
+- 2026-05-24T23:40:04Z [TOOL] Verified the archive history entry with `flutter test test/features/board/board_session_controller_test.dart`, `flutter test test/data/markdown_board_store_test.dart test/data/markdown_board_body_test.dart`, and `flutter analyze`.
 - 2026-05-24T23:00:05Z [CODE] Disabled AppKit automatic window tabbing in `MainFlutterWindow.swift`, then updated `board_workspace_page.dart` so the macOS View menu toggles Kanoli's own board tab row (`Hide Tab Bar` / `Show Tab Bar`).
 - 2026-05-24T23:00:05Z [TOOL] Verification passed after the macOS tabbing/menu change: `flutter test test/features/board/board_session_controller_test.dart` and `flutter analyze`.
 - 2026-05-24T11:38:27-0700 [TOOL] Created GitHub milestones for the roadmap timeline and assigned issues #3-#21 to the matching delivery buckets.
@@ -50,6 +54,8 @@
 
 ## [OUTCOMES]
 
+- 2026-05-24T23:52:49Z [CODE] Archive history is now stored as readable inline Markdown prose on the card body, preserving Markdown compatibility while avoiding timestamp-only note headings.
+- 2026-05-24T23:40:04Z [CODE] Archiving now leaves a readable, timestamped note in the Markdown board file without changing the existing card schema; behavior remains compatible with legacy boards and the existing notes parser/serializer.
 - 2026-05-24T23:00:05Z [TOOL] Native macOS tabbing suppression completed and the Flutter board tab row now has an explicit View-menu visibility action; no changes were made to Markdown, persistence, or board serialization.
 - 2026-05-24T11:38:27-0700 [TOOL] GitHub milestones now track the roadmap: `Beta Cleanup` due 2026-06-01 with 4 issues, `v1.0 Foundation` due 2026-06-07 with 4, `v1.0 Polish` due 2026-06-10 with 3, `v1.0 Release` due 2026-06-14 with 2, `Post-v1.0 Enhancements` due 2026-06-30 with 3, and `Later Roadmap` due 2026-07-31 with 3.
 - 2026-05-24T11:00:33-0700 [TOOL] `Weekly Board` now shows week columns by start date: Week of May 24 has 6 items (#3, #4, #10, #12, #13, #21), Week of May 31 has 4, Week of Jun 7 has 3, Week of Jun 14 has 3, Week of Jun 28 has 1, Week of Jul 5 has 1, and Week of Jul 19 has 1.

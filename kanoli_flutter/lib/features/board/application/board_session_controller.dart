@@ -713,18 +713,33 @@ class BoardSessionController extends ChangeNotifier {
 
   void archiveItem(String itemId) {
     // Archive is a normal column named "Archive" in the Markdown file.
-    String? archiveColumnId;
-    final existingArchive = _columns.where(_isArchiveColumn).firstOrNull;
-
-    if (existingArchive != null) {
-      archiveColumnId = existingArchive.id;
-    } else {
-      final archiveColumn = BoardColumn(title: 'Archive');
-      _columns = <BoardColumn>[..._columns, archiveColumn];
-      archiveColumnId = archiveColumn.id;
+    final source = _itemLocation(itemId);
+    if (source == null) {
+      return;
     }
 
-    moveItemToColumn(itemId, archiveColumnId);
+    final archiveColumnIndex = _columns.indexWhere(_isArchiveColumn);
+    final destinationColumnIndex = archiveColumnIndex >= 0
+        ? archiveColumnIndex
+        : _columns.length;
+
+    if (source.columnIndex == destinationColumnIndex) {
+      return;
+    }
+
+    if (archiveColumnIndex < 0) {
+      _columns = <BoardColumn>[..._columns, BoardColumn(title: 'Archive')];
+    }
+
+    final item = _columns[source.columnIndex].items.removeAt(source.itemIndex);
+    final archiveStamp =
+        'Archived at ${NoteDateFormatter.format(DateTime.now())}';
+    item.bodyMarkdown = item.bodyMarkdown.isEmpty
+        ? archiveStamp
+        : '$archiveStamp\n\n${item.bodyMarkdown.trimLeft()}';
+    _columns[destinationColumnIndex].items.add(item);
+    _persistWithoutAwait();
+    notifyListeners();
   }
 
   void clearSession() {

@@ -132,7 +132,29 @@ void main() {
     final archive = controller.columns.firstWhere(
       (BoardColumn c) => c.title.toLowerCase() == 'archive',
     );
+    final archivedItem = archive.items.single;
+
     expect(archive.items.map((BoardItem i) => i.id), <String>['item-1']);
+    expect(archivedItem.bodyMarkdown, isNotEmpty);
+    expect(archivedItem.bodyMarkdown, contains('Archived at '));
+
+    final archivedMarkdown = File(boardPath).readAsStringSync();
+    expect(archivedMarkdown, contains('Archived at '));
+    expect(
+      archivedMarkdown,
+      contains(
+        RegExp(
+          r'Archived at \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}',
+        ),
+      ),
+    );
+
+    final reloaded = markdownStore.loadBoard(boardPath);
+    expect(reloaded.errorMessage, isNull);
+    expect(
+      reloaded.columns.last.items.single.bodyMarkdown,
+      contains('Archived at '),
+    );
   });
 
   test('toggles board tab bar visibility without affecting session tabs', () {
