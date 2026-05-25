@@ -2,6 +2,7 @@
 
 ## [PLANS]
 
+- 2026-05-25T20:13:53Z [TOOL] Final macOS `0.7.0` distribution gate is Apple notarization and stapling; signed DMG submission is blocked until a `notarytool` Keychain profile named `KanoliNotary` is stored.
 - 2026-05-11T02:13:26Z [USER] Implement Markdown v2.1 preferred card shape on `dev`: optional human-authored card body prose, parser/serializer modularization, roadmap update, and verification.
 - 2026-05-11T02:13:26Z [ASSUMPTION] Existing uncommitted Markdown v2 work is the baseline for v2.1; do not revert it.
 
@@ -12,9 +13,13 @@
 - 2026-05-11T02:13:26Z [CODE] `AGENTS.md` requires touched code files to stay under 300 lines and continuity to be maintained in `.agent/CONTINUITY.md`.
 - 2026-05-11T03:26:00Z [USER] Human comments do not count toward the 300 LOC code limit; keep comments concise and avoid unnecessary paragraphs.
 - 2026-05-24T23:00:05Z [CODE] macOS board-tab behavior is now owned by the Flutter View menu and board tab row; native AppKit window tabbing remains disabled so no second native tab strip can appear.
+- 2026-05-25T20:13:53Z [USER] Supersedes the unsigned public beta distribution decision: proceed with official macOS Developer ID signing for the next DMG release.
+- 2026-05-25T20:13:53Z [CODE] macOS release identity is `app.kanoli.Kanoli`; Release distribution uses Developer ID Application signing with hardened runtime enabled and without injected development entitlements.
 
 ## [PROGRESS]
 
+- 2026-05-25T20:13:53Z [CODE] Advanced the macOS release build to `0.7.0+1`, aligned the app bundle identifier to `app.kanoli.Kanoli`, and configured Release for Developer ID Application signing, hardened runtime, and release-only sandbox/file-access entitlements.
+- 2026-05-25T20:13:53Z [TOOL] Built and Developer ID-signed `kanoli_flutter/dist/Kanoli-0.7.0.dmg` with `KANOLI_ENV=prod`; verified DMG integrity, app deep signing, embedded framework team identity, universal binary slices, and successful launch from the mounted DMG.
 - 2026-05-24T23:52:49Z [CODE] Refined archive history output so archived cards get inline body prose (`Archived at <timestamp>`) instead of a timestamp-only note heading.
 - 2026-05-24T23:52:49Z [TOOL] Re-verified the archive behavior with `flutter test test/features/board/board_session_controller_test.dart` after the format tweak.
 - 2026-05-24T23:40:04Z [CODE] Updated archive behavior so archiving a card inserts a timestamped `BoardNote` reading `Moved to Archive` before saving the card into the Archive column.
@@ -37,6 +42,8 @@
 
 ## [DISCOVERIES]
 
+- 2026-05-25T20:13:53Z [TOOL] The macOS `0.6.0` clean-install failure is a pre-app `dyld` abort loading `file_selector_macos.framework`, not an import/parser/persistence failure; the shipped hardened ad-hoc bundle reproduces `mapping process and mapped file (non-platform) have different Team IDs`.
+- 2026-05-25T20:13:53Z [TOOL] A temporary hardened ad-hoc copy launched only when signed with `com.apple.security.cs.disable-library-validation`; the official `0.7.0` build instead resolves the defect by signing the app and nested frameworks with Developer ID team `5Z6FYPML23`.
 - 2026-05-11T02:13:26Z [TOOL] Pre-refactor line counts: `markdown_board_store.dart` 668, `board_entities.dart` 322, `markdown_board_store_test.dart` 299.
 - 2026-05-11T02:58:00Z [TOOL] Final touched-code line counts are under 300 LOC: parser helpers 295, board entities 269, store test 298, body test 135.
 - 2026-05-14T19:02:31Z [TOOL] Flutter environment inspection: SDK exists at `C:\Users\develop\flutter_windows_3.41.9-stable\flutter` with Flutter 3.41.9/Dart 3.11.5 metadata; raw `dart.exe --version` works, but Flutter wrapper commands hung and Git reports the SDK repo as dubious ownership from the current execution context.
@@ -54,6 +61,7 @@
 
 ## [OUTCOMES]
 
+- 2026-05-25T20:13:53Z [TOOL] Signed macOS release candidate created at `kanoli_flutter/dist/Kanoli-0.7.0.dmg` (SHA-256 `476ca67607ca698a483cbdf9f9a6ccb19fdd90223a80384a7c753492196eae7c`); Gatekeeper status remains `Unnotarized Developer ID` until notarization and stapling complete.
 - 2026-05-24T23:52:49Z [CODE] Archive history is now stored as readable inline Markdown prose on the card body, preserving Markdown compatibility while avoiding timestamp-only note headings.
 - 2026-05-24T23:40:04Z [CODE] Archiving now leaves a readable, timestamped note in the Markdown board file without changing the existing card schema; behavior remains compatible with legacy boards and the existing notes parser/serializer.
 - 2026-05-24T23:00:05Z [TOOL] Native macOS tabbing suppression completed and the Flutter board tab row now has an explicit View-menu visibility action; no changes were made to Markdown, persistence, or board serialization.
