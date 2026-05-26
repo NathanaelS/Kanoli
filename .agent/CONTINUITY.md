@@ -19,6 +19,7 @@
 
 ## [PROGRESS]
 
+- 2026-05-26T02:47:18Z [CODE] Updated `kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart` for Swift-parity action affordances: non-filtered column headers now use a single ellipsis menu for `Rename` and `Delete Column`, and card actions now open from an ellipsis menu grouped as move, copy, archive, and `Delete Card`.
 - 2026-05-25T21:19:34Z [TOOL] First notarization submission `3d5f1ccf-e522-4fb1-9f3d-129a95e14746` was rejected because `Kanoli.app/Contents/MacOS/Kanoli` lacked a secure timestamp; re-signed the staged app with Developer ID, hardened runtime, release entitlements, and `--timestamp`, rebuilt and timestamp-signed the DMG, then submitted corrected artifact as `451d52aa-f3ee-45ea-b91d-ab1f18a7af39`.
 - 2026-05-25T20:31:23Z [USER] Signed macOS installation succeeded on a separate Mac; follow-up smoke testing reached the Trello JSON import workflow.
 - 2026-05-25T20:13:53Z [CODE] Advanced the macOS release build to `0.7.0+1`, aligned the app bundle identifier to `app.kanoli.Kanoli`, and configured Release for Developer ID Application signing, hardened runtime, and release-only sandbox/file-access entitlements.
@@ -45,6 +46,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-05-26T02:47:18Z [TOOL] Targeted validation for `board_workspace_page.dart` passes (`dart format` and `flutter analyze lib/features/board/presentation/board_workspace_page.dart`), but full-project `flutter analyze` currently hangs at `Analyzing kanoli_flutter...` and, when interrupted, reports `analysis server exited with code -2`.
 - 2026-05-25T21:19:34Z [TOOL] Notarization validates the timestamp on the app executable inside a signed DMG; timestamping only the DMG is insufficient. The corrected staged app validates deeply and preserves only sandbox plus user-selected file read/write entitlements.
 - 2026-05-25T20:31:23Z [TOOL] The reported JSON import "crash log" is a diagnostics export showing two handled `FormatException` failures: both selected `.json` inputs begin with `<!doctype html>` rather than JSON, so evidence does not implicate Trello decoding, Markdown persistence, or macOS file permission handling.
 - 2026-05-25T20:13:53Z [TOOL] The macOS `0.6.0` clean-install failure is a pre-app `dyld` abort loading `file_selector_macos.framework`, not an import/parser/persistence failure; the shipped hardened ad-hoc bundle reproduces `mapping process and mapped file (non-platform) have different Team IDs`.
@@ -66,6 +68,7 @@
 
 ## [OUTCOMES]
 
+- 2026-05-26T02:47:18Z [CODE] Scoped Flutter board workspace action-menu parity completed without touching controllers, models, persistence, tests, themes, platform files, or Swift sources; residual risk is limited to the unresolved full-project analyzer hang, so `flutter test` remains unverified for this pass.
 - 2026-05-25T21:19:34Z [TOOL] Corrected Developer ID and secure-timestamp signed DMG is at `kanoli_flutter/dist/Kanoli-0.7.0.dmg` with pre-staple SHA-256 `f6818862044e2f05435e3d9ea7f6d03ba53cb82a7ce67b7eb4d6fca49ddf5424`; final release status remains pending Apple acceptance and stapling.
 - 2026-05-25T20:13:53Z [TOOL] Signed macOS release candidate created at `kanoli_flutter/dist/Kanoli-0.7.0.dmg` (SHA-256 `476ca67607ca698a483cbdf9f9a6ccb19fdd90223a80384a7c753492196eae7c`); Gatekeeper status remains `Unnotarized Developer ID` until notarization and stapling complete.
 - 2026-05-24T23:52:49Z [CODE] Archive history is now stored as readable inline Markdown prose on the card body, preserving Markdown compatibility while avoiding timestamp-only note headings.

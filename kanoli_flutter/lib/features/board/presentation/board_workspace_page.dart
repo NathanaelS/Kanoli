@@ -187,7 +187,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           ),
         );
 
-        if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
+        if (!(Platform.isMacOS &&
+            defaultTargetPlatform == TargetPlatform.macOS)) {
           return scaffold;
         }
 
@@ -220,7 +221,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                       PlatformProvidedMenuItemType.hideOtherApplications,
                     ))
                       const PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.hideOtherApplications,
+                        type:
+                            PlatformProvidedMenuItemType.hideOtherApplications,
                       ),
                     if (PlatformProvidedMenuItem.hasMenu(
                       PlatformProvidedMenuItemType.showAllApplications,
@@ -302,8 +304,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                     ),
                     PlatformMenuItem(
                       label: 'Reveal Active Board in Finder',
-                      onSelected: () =>
-                          unawaited(_revealActiveBoardInFinder()),
+                      onSelected: () => unawaited(_revealActiveBoardInFinder()),
                     ),
                     PlatformMenuItem(
                       label: 'Copy Active Board Path',
@@ -382,7 +383,9 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                       ),
                       onSelected: () => Actions.invoke(
                         context,
-                        const SelectAllTextIntent(SelectionChangedCause.keyboard),
+                        const SelectAllTextIntent(
+                          SelectionChangedCause.keyboard,
+                        ),
                       ),
                     ),
                   ],
@@ -392,7 +395,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           ],
           child: scaffold,
         );
-
       },
     );
   }
@@ -642,15 +644,35 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                         ),
                 ),
                 if (!widget.controller.isFilterActive) ...<Widget>[
-                  IconButton(
-                    tooltip: 'Rename column',
-                    icon: const Icon(Icons.edit, size: 18),
-                    onPressed: () => _renameColumn(column),
-                  ),
-                  IconButton(
-                    tooltip: 'Delete column',
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => _deleteColumnWithConfirmation(column),
+                  MenuAnchor(
+                    builder:
+                        (
+                          BuildContext context,
+                          MenuController controller,
+                          Widget? child,
+                        ) {
+                          return IconButton(
+                            tooltip: 'Column actions',
+                            icon: const Icon(Icons.more_horiz, size: 18),
+                            onPressed: () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                          );
+                        },
+                    menuChildren: <Widget>[
+                      MenuItemButton(
+                        onPressed: () => _renameColumn(column),
+                        child: const Text('Rename'),
+                      ),
+                      MenuItemButton(
+                        onPressed: () => _deleteColumnWithConfirmation(column),
+                        child: const Text('Delete Column'),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -782,23 +804,31 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (!widget.controller.isFilterActive)
-              IconButton(
-                tooltip: 'Open item editor',
-                icon: const Icon(Icons.open_in_new, size: 18),
-                onPressed: _pendingNewItemId == item.id
-                    ? null
-                    : () => _openItemEditor(item.id),
+            MenuAnchor(
+              builder:
+                  (
+                    BuildContext context,
+                    MenuController controller,
+                    Widget? child,
+                  ) {
+                    return IconButton(
+                      tooltip: 'Item actions',
+                      icon: const Icon(Icons.more_horiz, size: 18),
+                      onPressed: _pendingNewItemId == item.id
+                          ? null
+                          : () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                    );
+                  },
+              menuChildren: _buildItemActionMenuChildren(
+                item: item,
+                sourceColumn: sourceColumn,
               ),
-            IconButton(
-              tooltip: 'Item actions',
-              icon: const Icon(Icons.more_horiz, size: 18),
-              onPressed: _pendingNewItemId == item.id
-                  ? null
-                  : () => _showItemActions(
-                      item: item,
-                      sourceColumn: sourceColumn,
-                    ),
             ),
           ],
         ),
@@ -1031,114 +1061,86 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  Future<void> _showItemActions({
+  List<Widget> _buildItemActionMenuChildren({
     required BoardItem item,
     required BoardColumn sourceColumn,
-  }) async {
-    // Secondary card actions live in a bottom sheet to keep cards compact.
-    final destinationColumns = widget.controller.columns
+  }) {
+    final moveDestinationColumns = widget.controller.columns
         .where((BoardColumn column) => column.id != sourceColumn.id)
         .toList();
+    final copyDestinationColumns = widget.controller.columns.toList();
     final destinationTabs = widget.controller.boardTabs
         .where((BoardTabState tab) => tab.id != widget.controller.selectedTabId)
         .toList();
 
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(12),
-            children: <Widget>[
-              ListTile(
-                title: Text(item.displayTitle),
-                subtitle: const Text('Item actions'),
+    return <Widget>[
+      SubmenuButton(
+        menuChildren: <Widget>[
+          if (moveDestinationColumns.isEmpty)
+            const MenuItemButton(child: Text('No other columns'))
+          else
+            ...moveDestinationColumns.map(
+              (BoardColumn column) => MenuItemButton(
+                onPressed: () =>
+                    widget.controller.moveItemToColumn(item.id, column.id),
+                child: Text(column.menuTitle),
               ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined),
-                title: const Text('Archive'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  widget.controller.archiveItem(item.id);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline),
-                title: const Text('Delete'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  await _deleteItemWithConfirmation(item);
-                },
-              ),
-              if (destinationColumns.isNotEmpty) ...<Widget>[
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Move to Column'),
-                ),
-                ...destinationColumns.map(
-                  (BoardColumn column) => ListTile(
-                    leading: const Icon(Icons.arrow_right_alt),
-                    title: Text(column.menuTitle),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.moveItemToColumn(item.id, column.id);
-                    },
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Copy to Column'),
-                ),
-                ...destinationColumns.map(
-                  (BoardColumn column) => ListTile(
-                    leading: const Icon(Icons.copy_outlined),
-                    title: Text(column.menuTitle),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.copyItemToColumn(item.id, column.id);
-                    },
-                  ),
-                ),
-              ],
-              if (destinationTabs.isNotEmpty) ...<Widget>[
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Move to Other Board'),
-                ),
-                ...destinationTabs.map(
-                  (BoardTabState tab) => ListTile(
-                    leading: const Icon(Icons.arrow_right_alt),
-                    title: Text(tab.title),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.moveItemToBoard(item.id, tab.path);
-                    },
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Copy to Other Board'),
-                ),
-                ...destinationTabs.map(
-                  (BoardTabState tab) => ListTile(
-                    leading: const Icon(Icons.copy_outlined),
-                    title: Text(tab.title),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.copyItemToBoard(item.id, tab.path);
-                    },
-                  ),
-                ),
-              ],
-            ],
+            ),
+          if (destinationTabs.isNotEmpty) ...<Widget>[
+            const Divider(height: 1),
+            SubmenuButton(
+              menuChildren: destinationTabs
+                  .map(
+                    (BoardTabState tab) => MenuItemButton(
+                      onPressed: () =>
+                          widget.controller.moveItemToBoard(item.id, tab.path),
+                      child: Text(tab.title),
+                    ),
+                  )
+                  .toList(),
+              child: const Text('Other Board'),
+            ),
+          ],
+        ],
+        child: const Text('Move to'),
+      ),
+      SubmenuButton(
+        menuChildren: <Widget>[
+          ...copyDestinationColumns.map(
+            (BoardColumn column) => MenuItemButton(
+              onPressed: () =>
+                  widget.controller.copyItemToColumn(item.id, column.id),
+              child: Text(column.menuTitle),
+            ),
           ),
-        );
-      },
-    );
+          if (destinationTabs.isNotEmpty) ...<Widget>[
+            const Divider(height: 1),
+            SubmenuButton(
+              menuChildren: destinationTabs
+                  .map(
+                    (BoardTabState tab) => MenuItemButton(
+                      onPressed: () =>
+                          widget.controller.copyItemToBoard(item.id, tab.path),
+                      child: Text(tab.title),
+                    ),
+                  )
+                  .toList(),
+              child: const Text('Other Board'),
+            ),
+          ],
+        ],
+        child: const Text('Copy to'),
+      ),
+      const Divider(height: 1),
+      MenuItemButton(
+        onPressed: () => widget.controller.archiveItem(item.id),
+        child: const Text('Archive'),
+      ),
+      MenuItemButton(
+        onPressed: () => _deleteItemWithConfirmation(item),
+        child: const Text('Delete Card'),
+      ),
+    ];
   }
 
   Future<void> _openBoard() async {
