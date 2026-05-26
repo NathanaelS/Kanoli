@@ -18,6 +18,7 @@
 
 ## [PROGRESS]
 
+- 2026-05-26T02:47:18Z [CODE] Updated `kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart` for Swift-parity action affordances: non-filtered column headers now use a single ellipsis menu for `Rename` and `Delete Column`, and card actions now open from an ellipsis menu grouped as move, copy, archive, and `Delete Card`.
 - 2026-05-25T20:13:53Z [CODE] Advanced the macOS release build to `0.7.0+1`, aligned the app bundle identifier to `app.kanoli.Kanoli`, and configured Release for Developer ID Application signing, hardened runtime, and release-only sandbox/file-access entitlements.
 - 2026-05-25T20:13:53Z [TOOL] Built and Developer ID-signed `kanoli_flutter/dist/Kanoli-0.7.0.dmg` with `KANOLI_ENV=prod`; verified DMG integrity, app deep signing, embedded framework team identity, universal binary slices, and successful launch from the mounted DMG.
 - 2026-05-24T23:52:49Z [CODE] Refined archive history output so archived cards get inline body prose (`Archived at <timestamp>`) instead of a timestamp-only note heading.
@@ -42,6 +43,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-05-26T02:47:18Z [TOOL] Targeted validation for `board_workspace_page.dart` passes (`dart format` and `flutter analyze lib/features/board/presentation/board_workspace_page.dart`), but full-project `flutter analyze` currently hangs at `Analyzing kanoli_flutter...` and, when interrupted, reports `analysis server exited with code -2`.
 - 2026-05-25T20:13:53Z [TOOL] The macOS `0.6.0` clean-install failure is a pre-app `dyld` abort loading `file_selector_macos.framework`, not an import/parser/persistence failure; the shipped hardened ad-hoc bundle reproduces `mapping process and mapped file (non-platform) have different Team IDs`.
 - 2026-05-25T20:13:53Z [TOOL] A temporary hardened ad-hoc copy launched only when signed with `com.apple.security.cs.disable-library-validation`; the official `0.7.0` build instead resolves the defect by signing the app and nested frameworks with Developer ID team `5Z6FYPML23`.
 - 2026-05-11T02:13:26Z [TOOL] Pre-refactor line counts: `markdown_board_store.dart` 668, `board_entities.dart` 322, `markdown_board_store_test.dart` 299.
@@ -61,6 +63,7 @@
 
 ## [OUTCOMES]
 
+- 2026-05-26T02:47:18Z [CODE] Scoped Flutter board workspace action-menu parity completed without touching controllers, models, persistence, tests, themes, platform files, or Swift sources; residual risk is limited to the unresolved full-project analyzer hang, so `flutter test` remains unverified for this pass.
 - 2026-05-25T20:13:53Z [TOOL] Signed macOS release candidate created at `kanoli_flutter/dist/Kanoli-0.7.0.dmg` (SHA-256 `476ca67607ca698a483cbdf9f9a6ccb19fdd90223a80384a7c753492196eae7c`); Gatekeeper status remains `Unnotarized Developer ID` until notarization and stapling complete.
 - 2026-05-24T23:52:49Z [CODE] Archive history is now stored as readable inline Markdown prose on the card body, preserving Markdown compatibility while avoiding timestamp-only note headings.
 - 2026-05-24T23:40:04Z [CODE] Archiving now leaves a readable, timestamped note in the Markdown board file without changing the existing card schema; behavior remains compatible with legacy boards and the existing notes parser/serializer.
