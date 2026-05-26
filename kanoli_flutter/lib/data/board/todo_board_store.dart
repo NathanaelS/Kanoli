@@ -15,6 +15,18 @@ class TodoBoardParseResult {
   final List<String> otherLines;
 }
 
+class TodoBoardItemCounts {
+  const TodoBoardItemCounts({
+    required this.total,
+    required this.completed,
+    required this.overdue,
+  });
+
+  final int total;
+  final int completed;
+  final int overdue;
+}
+
 class TodoBoardStore {
   TodoBoardStore({SafeFileStore? safeFileStore})
     : _safeFileStore = safeFileStore ?? SafeFileStore();
@@ -99,6 +111,45 @@ class TodoBoardStore {
     );
   }
 
+  Map<String, TodoBoardItemCounts> countsByCardId({required String text}) {
+    final counts = <String, TodoBoardItemCounts>{};
+    final rawLines = text.split('\n').toList();
+
+    if (text.endsWith('\n') || text.endsWith('\r\n')) {
+      rawLines.removeLast();
+    }
+
+    for (final rawLine in rawLines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) {
+        continue;
+      }
+
+      final isCompleted = line.startsWith('x ');
+      final activeLine = isCompleted ? line.substring(2) : line;
+      final cardId = _cardIdForTodoLine(activeLine);
+      if (cardId == null || cardId.isEmpty) {
+        continue;
+      }
+
+      final todoEntry = TodoListEntry.fromLine(
+        line: _todoLineForCurrentCardEditor(activeLine),
+        isCompleted: isCompleted,
+      );
+
+      final current =
+          counts[cardId] ??
+          const TodoBoardItemCounts(total: 0, completed: 0, overdue: 0);
+      counts[cardId] = TodoBoardItemCounts(
+        total: current.total + 1,
+        completed: current.completed + (isCompleted ? 1 : 0),
+        overdue: current.overdue + (todoEntry.isOverdue ? 1 : 0),
+      );
+    }
+
+    return counts;
+  }
+
   String serialize({
     required List<TodoListEntry> currentCardItems,
     required List<String> otherLines,
@@ -170,6 +221,15 @@ class TodoBoardStore {
 
   bool _todoLineMatchesCardId(String line, String cardId) {
     return line.split(' ').contains('card:$cardId');
+  }
+
+  String? _cardIdForTodoLine(String line) {
+    for (final part in line.split(' ')) {
+      if (part.startsWith('card:') && part.length > 5) {
+        return part.substring(5);
+      }
+    }
+    return null;
   }
 
   String _todoLineForCurrentCardEditor(String line) {
