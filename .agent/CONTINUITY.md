@@ -19,6 +19,7 @@
 
 ## [PROGRESS]
 
+- 2026-05-26T21:31:40Z [CODE] Added overdue notifications across the Flutter board and item editor: cards now distinguish overdue card due dates from overdue todo.txt items using separate warnings on the board face and in `item_editor_sheet.dart`, backed by lightweight `isOverdue` helpers and overdue todo counting in `todo_board_store.dart`.
 - 2026-05-26T13:53:22Z [TOOL] Created GitHub issue `#23` (`Task: Avoid synchronous todo sidecar reads during board rebuilds`) to track the known UI-path file I/O risk introduced by card-face todo counts.
 - 2026-05-26T09:26:00Z [CODE] Added card-face checklist and todo progress counts in `kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart`, using `BoardItem` checklist count getters and a new `TodoBoardStore.countsByCardId()` helper so the board reads sidecar todo counts once per rebuild without changing editor flow or board serialization.
 - 2026-05-26T02:47:18Z [CODE] Updated `kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart` for Swift-parity action affordances: non-filtered column headers now use a single ellipsis menu for `Rename` and `Delete Column`, and card actions now open from an ellipsis menu grouped as move, copy, archive, and `Delete Card`.
@@ -48,6 +49,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-05-26T21:31:40Z [TOOL] Full-project `flutter analyze` still hangs at `Analyzing kanoli_flutter...` and exits with `analysis server exited with code -2` when interrupted, but targeted analysis of the four edited overdue-notification files completed successfully with no issues.
 - 2026-05-26T09:26:00Z [TOOL] Full-project `flutter analyze` again stalled at `Analyzing kanoli_flutter...`; targeted analysis for `board_workspace_page.dart`, `todo_board_store.dart`, and `board_entities.dart` completed successfully with no issues.
 - 2026-05-26T02:47:18Z [TOOL] Targeted validation for `board_workspace_page.dart` passes (`dart format` and `flutter analyze lib/features/board/presentation/board_workspace_page.dart`), but full-project `flutter analyze` currently hangs at `Analyzing kanoli_flutter...` and, when interrupted, reports `analysis server exited with code -2`.
 - 2026-05-25T21:19:34Z [TOOL] Notarization validates the timestamp on the app executable inside a signed DMG; timestamping only the DMG is insufficient. The corrected staged app validates deeply and preserves only sandbox plus user-selected file read/write entitlements.
@@ -71,6 +73,7 @@
 
 ## [OUTCOMES]
 
+- 2026-05-26T21:31:40Z [CODE] Overdue notification support now distinguishes board-level overdue cards from overdue todo-list items without changing Markdown/todo.txt formats, controller flow, or editor navigation; remaining validation risk is limited to the existing full-project analyzer hang.
 - 2026-05-26T13:53:22Z [TOOL] Added issue `#23` to GitHub Project `NathanaelS/Kanoli` project `1` and categorized it as `Task`, `Priority B`, `Area UI`, `Source GitHub Issue`, `Target v1.0`, `Timeframe v1.0 Polish`, `Roadmap Week: Week of Jun 7`, with `Start Date 2026-06-09`, `Target Date 2026-06-10`, and issue milestone `v1.0 Polish`.
 - 2026-05-26T09:26:00Z [CODE] Card tiles now surface checklist and todo progress counts directly on the board face with a small UI-only diff; persistence, parsing formats, controller flow, and the item editor behavior remain unchanged.
 - 2026-05-26T02:47:18Z [CODE] Scoped Flutter board workspace action-menu parity completed without touching controllers, models, persistence, tests, themes, platform files, or Swift sources; residual risk is limited to the unresolved full-project analyzer hang, so `flutter test` remains unverified for this pass.

@@ -604,7 +604,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   ) {
     // Columns own inline rename/new-card state and the drop zones between cards.
     return Container(
-      width: 300,
+      width: 320,
       decoration: BoxDecoration(
         gradient: visuals.columnPanelGradient,
         borderRadius: BorderRadius.circular(14),
@@ -809,7 +809,13 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   onTapOutside: (_) => _commitPendingNewItem(),
                 ),
               )
-            : Text(item.displayTitle),
+            : Text(
+                item.displayTitle,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                ),
+              ),
         subtitle: _itemSubtitle(item: item, todoCounts: todoCounts),
         onTap: _pendingNewItemId == item.id
             ? null
@@ -888,29 +894,66 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     required TodoBoardItemCounts? todoCounts,
   }) {
     final children = <Widget>[];
-    if (item.metadataSummary.isNotEmpty) {
-      children.add(Text(item.metadataSummary));
-    }
-
-    final countBadges = <Widget>[
-      if (item.checklistItemCount > 0)
-        _itemCountBadge(
-          icon: Icons.checklist_rounded,
-          countText:
-              '${item.completedChecklistItemCount}/${item.checklistItemCount}',
-        ),
-      if (todoCounts != null && todoCounts.total > 0)
-        _itemCountBadge(
-          icon: Icons.check_box_outlined,
-          countText: '${todoCounts.completed}/${todoCounts.total}',
-        ),
+    final metadataParts = <String>[
+      if (item.priority != null && item.priority!.isNotEmpty)
+        '(${item.priority!})',
+      ...item.labels.map((String label) => '+$label'),
     ];
 
-    if (countBadges.isNotEmpty) {
+    if (metadataParts.isNotEmpty) {
+      children.add(Text(metadataParts.join(' ')));
+    }
+
+    final dueAndOverdueRow = _itemInfoRow(
+      left: item.dueDate != null
+          ? _itemCountBadge(
+              icon: Icons.schedule_outlined,
+              countText: TodoDateFormatter.format(item.dueDate!),
+            )
+          : null,
+      right: item.isOverdue
+          ? _itemAlertBadge(
+              icon: Icons.notifications_active_outlined,
+              text: 'Overdue',
+            )
+          : null,
+      leftFlex: 5,
+      rightFlex: 4,
+    );
+
+    if (dueAndOverdueRow != null) {
       if (children.isNotEmpty) {
         children.add(const SizedBox(height: 6));
       }
-      children.add(Wrap(spacing: 12, runSpacing: 4, children: countBadges));
+      children.add(dueAndOverdueRow);
+    }
+
+    final countsRow = _itemInfoRow(
+      left: item.checklistItemCount > 0
+          ? _itemCountBadge(
+              icon: Icons.checklist_rounded,
+              countText:
+                  '${item.completedChecklistItemCount}/${item.checklistItemCount}',
+            )
+          : null,
+      right: todoCounts != null && todoCounts.total > 0
+          ? _itemCountBadge(
+              icon: Icons.check_box_outlined,
+              countText: todoCounts.overdue > 0
+                  ? '${todoCounts.completed}/${todoCounts.total} · ${todoCounts.overdue} late'
+                  : '${todoCounts.completed}/${todoCounts.total}',
+              isAlert: todoCounts.overdue > 0,
+            )
+          : null,
+      leftFlex: 4,
+      rightFlex: 5,
+    );
+
+    if (countsRow != null) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: 6));
+      }
+      children.add(countsRow);
     }
 
     if (children.isEmpty) {
@@ -924,13 +967,68 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  Widget _itemCountBadge({required IconData icon, required String countText}) {
+  Widget? _itemInfoRow({
+    Widget? left,
+    Widget? right,
+    int leftFlex = 1,
+    int rightFlex = 1,
+  }) {
+    if (left == null && right == null) {
+      return null;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(flex: leftFlex, child: left ?? const SizedBox.shrink()),
+        const SizedBox(width: 12),
+        Expanded(flex: rightFlex, child: right ?? const SizedBox.shrink()),
+      ],
+    );
+  }
+
+  Widget _itemCountBadge({
+    required IconData icon,
+    required String countText,
+    bool isAlert = false,
+  }) {
+    final color = isAlert ? Theme.of(context).colorScheme.error : null;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(icon, size: 16),
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 3),
+        Flexible(
+          child: Text(
+            countText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: TextStyle(color: color, fontSize: 12.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _itemAlertBadge({required IconData icon, required String text}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.error),
         const SizedBox(width: 4),
-        Text(countText),
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: 13,
+            ),
+          ),
+        ),
       ],
     );
   }

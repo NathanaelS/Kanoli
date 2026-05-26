@@ -16,10 +16,15 @@ class TodoBoardParseResult {
 }
 
 class TodoBoardItemCounts {
-  const TodoBoardItemCounts({required this.total, required this.completed});
+  const TodoBoardItemCounts({
+    required this.total,
+    required this.completed,
+    required this.overdue,
+  });
 
   final int total;
   final int completed;
+  final int overdue;
 }
 
 class TodoBoardStore {
@@ -127,11 +132,18 @@ class TodoBoardStore {
         continue;
       }
 
+      final todoEntry = TodoListEntry.fromLine(
+        line: _todoLineForCurrentCardEditor(activeLine),
+        isCompleted: isCompleted,
+      );
+
       final current =
-          counts[cardId] ?? const TodoBoardItemCounts(total: 0, completed: 0);
+          counts[cardId] ??
+          const TodoBoardItemCounts(total: 0, completed: 0, overdue: 0);
       counts[cardId] = TodoBoardItemCounts(
         total: current.total + 1,
         completed: current.completed + (isCompleted ? 1 : 0),
+        overdue: current.overdue + (todoEntry.isOverdue ? 1 : 0),
       );
     }
 

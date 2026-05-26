@@ -107,6 +107,14 @@ class BoardItem {
 
   String get displayTitle => title.isEmpty ? 'New item' : title;
 
+  bool get isOverdue {
+    final value = dueDate;
+    if (value == null) {
+      return false;
+    }
+    return value.isBefore(_startOfToday());
+  }
+
   String get metadataSummary {
     final parts = <String>[];
     if (priority != null && priority!.isNotEmpty) {
@@ -266,6 +274,13 @@ class TodoListEntry {
 
   String get priorityLabel => priority ?? '-';
 
+  bool get isOverdue {
+    if (isCompleted || dueDate == null) {
+      return false;
+    }
+    return dueDate!.isBefore(_startOfToday());
+  }
+
   String get todoLine {
     final parts = <String>[];
 
@@ -285,4 +300,9 @@ class TodoListEntry {
 
     return parts.join(' ');
   }
+}
+
+DateTime _startOfToday() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
 }
