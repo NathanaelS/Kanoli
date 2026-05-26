@@ -2,6 +2,7 @@
 
 ## [PLANS]
 
+- 2026-05-25T21:19:34Z [TOOL] Corrected macOS `0.7.0` notarization submission `451d52aa-f3ee-45ea-b91d-ab1f18a7af39` is processing at Apple; once `Accepted`, staple and validate `kanoli_flutter/dist/Kanoli-0.7.0.dmg` before distribution.
 - 2026-05-25T20:13:53Z [TOOL] Final macOS `0.7.0` distribution gate is Apple notarization and stapling; signed DMG submission is blocked until a `notarytool` Keychain profile named `KanoliNotary` is stored.
 - 2026-05-11T02:13:26Z [USER] Implement Markdown v2.1 preferred card shape on `dev`: optional human-authored card body prose, parser/serializer modularization, roadmap update, and verification.
 - 2026-05-11T02:13:26Z [ASSUMPTION] Existing uncommitted Markdown v2 work is the baseline for v2.1; do not revert it.
@@ -18,6 +19,8 @@
 
 ## [PROGRESS]
 
+- 2026-05-25T21:19:34Z [TOOL] First notarization submission `3d5f1ccf-e522-4fb1-9f3d-129a95e14746` was rejected because `Kanoli.app/Contents/MacOS/Kanoli` lacked a secure timestamp; re-signed the staged app with Developer ID, hardened runtime, release entitlements, and `--timestamp`, rebuilt and timestamp-signed the DMG, then submitted corrected artifact as `451d52aa-f3ee-45ea-b91d-ab1f18a7af39`.
+- 2026-05-25T20:31:23Z [USER] Signed macOS installation succeeded on a separate Mac; follow-up smoke testing reached the Trello JSON import workflow.
 - 2026-05-25T20:13:53Z [CODE] Advanced the macOS release build to `0.7.0+1`, aligned the app bundle identifier to `app.kanoli.Kanoli`, and configured Release for Developer ID Application signing, hardened runtime, and release-only sandbox/file-access entitlements.
 - 2026-05-25T20:13:53Z [TOOL] Built and Developer ID-signed `kanoli_flutter/dist/Kanoli-0.7.0.dmg` with `KANOLI_ENV=prod`; verified DMG integrity, app deep signing, embedded framework team identity, universal binary slices, and successful launch from the mounted DMG.
 - 2026-05-24T23:52:49Z [CODE] Refined archive history output so archived cards get inline body prose (`Archived at <timestamp>`) instead of a timestamp-only note heading.
@@ -42,6 +45,8 @@
 
 ## [DISCOVERIES]
 
+- 2026-05-25T21:19:34Z [TOOL] Notarization validates the timestamp on the app executable inside a signed DMG; timestamping only the DMG is insufficient. The corrected staged app validates deeply and preserves only sandbox plus user-selected file read/write entitlements.
+- 2026-05-25T20:31:23Z [TOOL] The reported JSON import "crash log" is a diagnostics export showing two handled `FormatException` failures: both selected `.json` inputs begin with `<!doctype html>` rather than JSON, so evidence does not implicate Trello decoding, Markdown persistence, or macOS file permission handling.
 - 2026-05-25T20:13:53Z [TOOL] The macOS `0.6.0` clean-install failure is a pre-app `dyld` abort loading `file_selector_macos.framework`, not an import/parser/persistence failure; the shipped hardened ad-hoc bundle reproduces `mapping process and mapped file (non-platform) have different Team IDs`.
 - 2026-05-25T20:13:53Z [TOOL] A temporary hardened ad-hoc copy launched only when signed with `com.apple.security.cs.disable-library-validation`; the official `0.7.0` build instead resolves the defect by signing the app and nested frameworks with Developer ID team `5Z6FYPML23`.
 - 2026-05-11T02:13:26Z [TOOL] Pre-refactor line counts: `markdown_board_store.dart` 668, `board_entities.dart` 322, `markdown_board_store_test.dart` 299.
@@ -61,6 +66,7 @@
 
 ## [OUTCOMES]
 
+- 2026-05-25T21:19:34Z [TOOL] Corrected Developer ID and secure-timestamp signed DMG is at `kanoli_flutter/dist/Kanoli-0.7.0.dmg` with pre-staple SHA-256 `f6818862044e2f05435e3d9ea7f6d03ba53cb82a7ce67b7eb4d6fca49ddf5424`; final release status remains pending Apple acceptance and stapling.
 - 2026-05-25T20:13:53Z [TOOL] Signed macOS release candidate created at `kanoli_flutter/dist/Kanoli-0.7.0.dmg` (SHA-256 `476ca67607ca698a483cbdf9f9a6ccb19fdd90223a80384a7c753492196eae7c`); Gatekeeper status remains `Unnotarized Developer ID` until notarization and stapling complete.
 - 2026-05-24T23:52:49Z [CODE] Archive history is now stored as readable inline Markdown prose on the card body, preserving Markdown compatibility while avoiding timestamp-only note headings.
 - 2026-05-24T23:40:04Z [CODE] Archiving now leaves a readable, timestamped note in the Markdown board file without changing the existing card schema; behavior remains compatible with legacy boards and the existing notes parser/serializer.
