@@ -119,6 +119,18 @@ class BoardItem {
     return parts.join(' ');
   }
 
+  int get checklistItemCount => checklists.fold(
+    0,
+    (int total, BoardChecklist checklist) => total + checklist.items.length,
+  );
+
+  int get completedChecklistItemCount => checklists.fold(
+    0,
+    (int total, BoardChecklist checklist) =>
+        total +
+        checklist.items.where((BoardChecklistItem item) => item.isDone).length,
+  );
+
   BoardItem duplicatedWithNewIds() {
     // Duplicates keep user-authored content but receive fresh IDs for the card
     // and nested checklist/note records.

@@ -12,6 +12,7 @@ import '../../../core/config/app_environment.dart';
 import '../../../core/diagnostics/diagnostics_store.dart';
 import '../../../core/files/board_file_access_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/board/todo_board_store.dart';
 import '../../../domain/board/board_entities.dart';
 import '../application/board_session_controller.dart';
 import 'item_editor_sheet.dart';
@@ -34,6 +35,7 @@ class BoardWorkspacePage extends StatefulWidget {
 
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final AuraIntensity _auraIntensity = AuraIntensity.subtle;
+  final TodoBoardStore _todoBoardStore = TodoBoardStore();
   static const MethodChannel _nativeDialogsChannel = MethodChannel(
     'kanoli/native_dialogs',
   );
@@ -479,6 +481,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     // and add-column affordance.
     final tabs = widget.controller.boardTabs;
     final selectedTabId = widget.controller.selectedTabId;
+    final todoCountsByCardId = _todoCountsByCardId();
     final columns = widget.controller.isFilterActive
         ? widget.controller.filteredResultsColumns()
         : widget.controller.visibleColumns;
@@ -556,7 +559,12 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ...columns.map((BoardColumn column) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
-                    child: _columnCard(context, column, visuals),
+                    child: _columnCard(
+                      context,
+                      column,
+                      visuals,
+                      todoCountsByCardId,
+                    ),
                   );
                 }),
                 if (!widget.controller.isFilterActive)
@@ -592,6 +600,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     BuildContext context,
     BoardColumn column,
     AuraVisualProfile visuals,
+    Map<String, TodoBoardItemCounts> todoCountsByCardId,
   ) {
     // Columns own inline rename/new-card state and the drop zones between cards.
     return Container(
@@ -712,6 +721,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                                       child: _itemTile(
                                         item: column.items[index],
                                         sourceColumn: column,
+                                        todoCounts:
+                                            todoCountsByCardId[column
+                                                .items[index]
+                                                .id],
                                         visuals: visuals,
                                       ),
                                     ),
@@ -722,6 +735,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                               return _itemTile(
                                 item: item,
                                 sourceColumn: column,
+                                todoCounts: todoCountsByCardId[item.id],
                                 visuals: visuals,
                               );
                             }),
@@ -757,6 +771,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   Widget _itemTile({
     required BoardItem item,
     required BoardColumn sourceColumn,
+    required TodoBoardItemCounts? todoCounts,
     required AuraVisualProfile visuals,
   }) {
     // Card tiles are draggable outside filtered views and open the editor on
@@ -795,9 +810,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ),
               )
             : Text(item.displayTitle),
-        subtitle: item.metadataSummary.isEmpty
-            ? null
-            : Text(item.metadataSummary),
+        subtitle: _itemSubtitle(item: item, todoCounts: todoCounts),
         onTap: _pendingNewItemId == item.id
             ? null
             : () => _openItemEditor(item.id),
@@ -868,6 +881,83 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               child: tile,
             ),
     );
+  }
+
+  Widget? _itemSubtitle({
+    required BoardItem item,
+    required TodoBoardItemCounts? todoCounts,
+  }) {
+    final children = <Widget>[];
+    if (item.metadataSummary.isNotEmpty) {
+      children.add(Text(item.metadataSummary));
+    }
+
+    final countBadges = <Widget>[
+      if (item.checklistItemCount > 0)
+        _itemCountBadge(
+          icon: Icons.checklist_rounded,
+          countText:
+              '${item.completedChecklistItemCount}/${item.checklistItemCount}',
+        ),
+      if (todoCounts != null && todoCounts.total > 0)
+        _itemCountBadge(
+          icon: Icons.check_box_outlined,
+          countText: '${todoCounts.completed}/${todoCounts.total}',
+        ),
+    ];
+
+    if (countBadges.isNotEmpty) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: 6));
+      }
+      children.add(Wrap(spacing: 12, runSpacing: 4, children: countBadges));
+    }
+
+    if (children.isEmpty) {
+      return null;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+  }
+
+  Widget _itemCountBadge({required IconData icon, required String countText}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 16),
+        const SizedBox(width: 4),
+        Text(countText),
+      ],
+    );
+  }
+
+  Map<String, TodoBoardItemCounts> _todoCountsByCardId() {
+    final path = widget.controller.activeTodoPath;
+    if (path == null || path.trim().isEmpty) {
+      return const <String, TodoBoardItemCounts>{};
+    }
+
+    try {
+      final todoFile = File(path);
+      if (!todoFile.existsSync()) {
+        return const <String, TodoBoardItemCounts>{};
+      }
+      return _todoBoardStore.countsByCardId(text: todoFile.readAsStringSync());
+    } on FileSystemException catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'kanoli',
+          context: ErrorDescription('while reading todo counts for card tiles'),
+        ),
+      );
+      return const <String, TodoBoardItemCounts>{};
+    }
   }
 
   Widget _columnDropTarget({
