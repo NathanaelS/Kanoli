@@ -168,6 +168,68 @@ void main() {
       );
     });
 
+    test('maps archived Trello cards and lists to Kanoli archive', () {
+      const data = '''
+{
+  "lists": [
+    {
+      "id": "list-active",
+      "name": "Active",
+      "pos": 1,
+      "closed": false
+    },
+    {
+      "id": "list-closed",
+      "name": "Closed List",
+      "pos": 2,
+      "closed": true
+    }
+  ],
+  "cards": [
+    {
+      "id": "card-active",
+      "idList": "list-active",
+      "name": "Visible card",
+      "pos": 1,
+      "closed": false
+    },
+    {
+      "id": "card-closed",
+      "idList": "list-active",
+      "name": "Archived card",
+      "pos": 2,
+      "closed": true
+    },
+    {
+      "id": "card-in-closed-list",
+      "idList": "list-closed",
+      "name": "Card from archived list",
+      "pos": 1,
+      "closed": false
+    }
+  ],
+  "checklists": [],
+  "labels": [],
+  "actions": []
+}
+''';
+
+      final store = JsonBoardStore();
+      final columns = store.decodeBoard(data);
+
+      expect(columns.map((BoardColumn column) => column.title), <String>[
+        'Active',
+        'Archive',
+      ]);
+      expect(columns.first.items.map((BoardItem item) => item.title), <String>[
+        'Visible card',
+      ]);
+      expect(columns.last.items.map((BoardItem item) => item.title), <String>[
+        'Archived card',
+        'Card from archived list',
+      ]);
+    });
+
     test('rejects invalid imported due date format', () {
       const data = '''
 {

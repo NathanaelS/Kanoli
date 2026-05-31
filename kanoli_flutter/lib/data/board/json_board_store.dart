@@ -222,100 +222,149 @@ class JsonBoardStore {
       return pa.compareTo(pb);
     });
 
-    return lists.map((Map<String, dynamic> list) {
-      final listId = list['id']?.toString();
-      final listCards = cardsByListId[listId] ?? <Map<String, dynamic>>[];
+    final closedListIds = lists
+        .where((Map<String, dynamic> list) => _isTrelloClosed(list))
+        .map((Map<String, dynamic> list) => list['id']?.toString())
+        .whereType<String>()
+        .toSet();
+    final listPositionById = <String, double>{
+      for (final list in lists)
+        if (list['id'] != null)
+          list['id'].toString(): (list['pos'] as num?)?.toDouble() ?? 0,
+    };
 
-      listCards.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
+    BoardItem boardItemForCard(Map<String, dynamic> card) {
+      final cardId = card['id']?.toString() ?? '';
+
+      final rawCardChecklists =
+          checklistByCardId[cardId] ?? <Map<String, dynamic>>[];
+      rawCardChecklists.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
         final pa = (a['pos'] as num?)?.toDouble() ?? 0;
         final pb = (b['pos'] as num?)?.toDouble() ?? 0;
         return pa.compareTo(pb);
       });
 
-      final items = listCards.map((Map<String, dynamic> card) {
-        final cardId = card['id']?.toString() ?? '';
-
-        final rawCardChecklists =
-            checklistByCardId[cardId] ?? <Map<String, dynamic>>[];
-        rawCardChecklists.sort((
-          Map<String, dynamic> a,
-          Map<String, dynamic> b,
-        ) {
+      final boardChecklists = rawCardChecklists.map((
+        Map<String, dynamic> rawChecklist,
+      ) {
+        final rawItems =
+            (rawChecklist['checkItems'] as List<dynamic>? ?? <dynamic>[])
+                .whereType<Map<String, dynamic>>()
+                .toList();
+        rawItems.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
           final pa = (a['pos'] as num?)?.toDouble() ?? 0;
           final pb = (b['pos'] as num?)?.toDouble() ?? 0;
           return pa.compareTo(pb);
         });
 
-        final boardChecklists = rawCardChecklists.map((
-          Map<String, dynamic> rawChecklist,
-        ) {
-          final rawItems =
-              (rawChecklist['checkItems'] as List<dynamic>? ?? <dynamic>[])
-                  .whereType<Map<String, dynamic>>()
-                  .toList();
-          rawItems.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
+        return BoardChecklist(
+          title: (rawChecklist['name'] ?? '').toString(),
+          items: rawItems
+              .map(
+                (Map<String, dynamic> rawItem) => BoardChecklistItem(
+                  text: (rawItem['name'] ?? '').toString(),
+                  isDone: rawItem['state']?.toString() == 'complete',
+                ),
+              )
+              .toList(),
+        );
+      }).toList();
+
+      final cardLabels = (card['idLabels'] as List<dynamic>? ?? <dynamic>[])
+          .map((dynamic id) => labelsById[id.toString()] ?? '')
+          .where((String label) => label.isNotEmpty)
+          .toList();
+
+      final comments = commentsByCardId[cardId] ?? <_TrelloComment>[];
+      comments.sort(
+        (_TrelloComment a, _TrelloComment b) => a.date.compareTo(b.date),
+      );
+
+      final notes = <BoardNote>[];
+      final description = (card['desc'] ?? '').toString();
+      if (description.trim().isNotEmpty) {
+        notes.add(BoardNote(text: description));
+      }
+      notes.addAll(
+        comments.map((c) => BoardNote(createdAt: c.date, text: c.text)),
+      );
+
+      final dueRaw = card['due']?.toString();
+      DateTime? dueDate;
+      if (dueRaw != null && dueRaw.isNotEmpty) {
+        dueDate = DateTime.tryParse(dueRaw);
+        if (dueDate == null) {
+          throw JsonBoardImportException(
+            'Expected ISO8601 date in Trello export.',
+          );
+        }
+      }
+
+      return BoardItem(
+        title: (card['name'] ?? '').toString(),
+        notes: notes,
+        checklists: boardChecklists,
+        dueDate: dueDate == null
+            ? null
+            : DateTime(dueDate.year, dueDate.month, dueDate.day),
+        labels: cardLabels,
+      );
+    }
+
+    final columns = lists
+        .where((Map<String, dynamic> list) => !_isTrelloClosed(list))
+        .map((Map<String, dynamic> list) {
+          final listId = list['id']?.toString();
+          final listCards = (cardsByListId[listId] ?? <Map<String, dynamic>>[])
+              .where((Map<String, dynamic> card) => !_isTrelloClosed(card))
+              .toList();
+
+          listCards.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
             final pa = (a['pos'] as num?)?.toDouble() ?? 0;
             final pb = (b['pos'] as num?)?.toDouble() ?? 0;
             return pa.compareTo(pb);
           });
 
-          return BoardChecklist(
-            title: (rawChecklist['name'] ?? '').toString(),
-            items: rawItems
-                .map(
-                  (Map<String, dynamic> rawItem) => BoardChecklistItem(
-                    text: (rawItem['name'] ?? '').toString(),
-                    isDone: rawItem['state']?.toString() == 'complete',
-                  ),
-                )
-                .toList(),
+          final items = listCards.map(boardItemForCard).toList();
+
+          return BoardColumn(
+            title: (list['name'] ?? '').toString(),
+            items: items,
           );
-        }).toList();
+        })
+        .toList();
 
-        final cardLabels = (card['idLabels'] as List<dynamic>? ?? <dynamic>[])
-            .map((dynamic id) => labelsById[id.toString()] ?? '')
-            .where((String label) => label.isNotEmpty)
-            .toList();
-
-        final comments = commentsByCardId[cardId] ?? <_TrelloComment>[];
-        comments.sort(
-          (_TrelloComment a, _TrelloComment b) => a.date.compareTo(b.date),
-        );
-
-        final notes = <BoardNote>[];
-        final description = (card['desc'] ?? '').toString();
-        if (description.trim().isNotEmpty) {
-          notes.add(BoardNote(text: description));
-        }
-        notes.addAll(
-          comments.map((c) => BoardNote(createdAt: c.date, text: c.text)),
-        );
-
-        final dueRaw = card['due']?.toString();
-        DateTime? dueDate;
-        if (dueRaw != null && dueRaw.isNotEmpty) {
-          dueDate = DateTime.tryParse(dueRaw);
-          if (dueDate == null) {
-            throw JsonBoardImportException(
-              'Expected ISO8601 date in Trello export.',
-            );
-          }
-        }
-
-        return BoardItem(
-          title: (card['name'] ?? '').toString(),
-          notes: notes,
-          checklists: boardChecklists,
-          dueDate: dueDate == null
-              ? null
-              : DateTime(dueDate.year, dueDate.month, dueDate.day),
-          labels: cardLabels,
-        );
-      }).toList();
-
-      return BoardColumn(title: (list['name'] ?? '').toString(), items: items);
+    final archivedCards = cards.where((Map<String, dynamic> card) {
+      final listId = card['idList']?.toString();
+      return _isTrelloClosed(card) ||
+          (listId != null && closedListIds.contains(listId));
     }).toList();
+    archivedCards.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
+      final aListPos = listPositionById[a['idList']?.toString()] ?? 0;
+      final bListPos = listPositionById[b['idList']?.toString()] ?? 0;
+      final listComparison = aListPos.compareTo(bListPos);
+      if (listComparison != 0) {
+        return listComparison;
+      }
+
+      final pa = (a['pos'] as num?)?.toDouble() ?? 0;
+      final pb = (b['pos'] as num?)?.toDouble() ?? 0;
+      return pa.compareTo(pb);
+    });
+
+    if (archivedCards.isNotEmpty) {
+      columns.add(
+        BoardColumn(
+          title: 'Archive',
+          items: archivedCards.map(boardItemForCard).toList(),
+        ),
+      );
+    }
+
+    return columns;
   }
+
+  bool _isTrelloClosed(Map<String, dynamic> value) => value['closed'] == true;
 }
 
 class _TrelloComment {
