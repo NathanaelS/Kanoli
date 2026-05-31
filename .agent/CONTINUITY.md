@@ -19,6 +19,9 @@
 
 ## [PROGRESS]
 
+- 2026-05-31T23:32:58Z [CODE] Enhanced fast card search palette guidance with inline example criteria and extended matching to support `+label` and `due:YYYY-MM-DD`/date queries.
+- 2026-05-31T23:26:07Z [CODE] Fixed Cmd+P fast card search invocation on macOS by adding a native Flutter `PlatformMenuItem` shortcut (`Edit > Search Cards`) and guarding against duplicate palette dialogs.
+- 2026-05-31T23:16:54Z [CODE] Implemented active-board Cmd+P fast card search in Flutter: pure search over title/labels/body-notes/checklists/todo text, read-only todo sidecar text grouping, palette UI with keyboard navigation, and workspace shortcut routing to the existing item editor.
 - 2026-05-26T21:31:40Z [CODE] Added overdue notifications across the Flutter board and item editor: cards now distinguish overdue card due dates from overdue todo.txt items using separate warnings on the board face and in `item_editor_sheet.dart`, backed by lightweight `isOverdue` helpers and overdue todo counting in `todo_board_store.dart`.
 - 2026-05-26T13:53:22Z [TOOL] Created GitHub issue `#23` (`Task: Avoid synchronous todo sidecar reads during board rebuilds`) to track the known UI-path file I/O risk introduced by card-face todo counts.
 - 2026-05-26T09:26:00Z [CODE] Added card-face checklist and todo progress counts in `kanoli_flutter/lib/features/board/presentation/board_workspace_page.dart`, using `BoardItem` checklist count getters and a new `TodoBoardStore.countsByCardId()` helper so the board reads sidecar todo counts once per rebuild without changing editor flow or board serialization.
@@ -49,6 +52,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-05-31T23:26:07Z [TOOL] Full-project `flutter analyze` now completes successfully on `feature/5-add-fast-card-search`; previous analyzer-hang discovery is superseded for this branch state.
 - 2026-05-26T21:31:40Z [TOOL] Full-project `flutter analyze` still hangs at `Analyzing kanoli_flutter...` and exits with `analysis server exited with code -2` when interrupted, but targeted analysis of the four edited overdue-notification files completed successfully with no issues.
 - 2026-05-26T09:26:00Z [TOOL] Full-project `flutter analyze` again stalled at `Analyzing kanoli_flutter...`; targeted analysis for `board_workspace_page.dart`, `todo_board_store.dart`, and `board_entities.dart` completed successfully with no issues.
 - 2026-05-26T02:47:18Z [TOOL] Targeted validation for `board_workspace_page.dart` passes (`dart format` and `flutter analyze lib/features/board/presentation/board_workspace_page.dart`), but full-project `flutter analyze` currently hangs at `Analyzing kanoli_flutter...` and, when interrupted, reports `analysis server exited with code -2`.
@@ -73,6 +77,9 @@
 
 ## [OUTCOMES]
 
+- 2026-05-31T23:32:58Z [TOOL] Search guidance/date-label enhancement validation passed: `flutter analyze`, focused search/palette tests, and full `flutter test` completed successfully.
+- 2026-05-31T23:26:07Z [TOOL] Cmd+P invocation fix validation passed: `flutter analyze`, focused fast-search tests, and full `flutter test` all completed successfully.
+- 2026-05-31T23:16:54Z [TOOL] Fast card search validation passed: targeted `flutter analyze` for the edited search/palette/todo/workspace files reported no issues, focused search tests passed, and full `flutter test` passed.
 - 2026-05-26T21:31:40Z [CODE] Overdue notification support now distinguishes board-level overdue cards from overdue todo-list items without changing Markdown/todo.txt formats, controller flow, or editor navigation; remaining validation risk is limited to the existing full-project analyzer hang.
 - 2026-05-26T13:53:22Z [TOOL] Added issue `#23` to GitHub Project `NathanaelS/Kanoli` project `1` and categorized it as `Task`, `Priority B`, `Area UI`, `Source GitHub Issue`, `Target v1.0`, `Timeframe v1.0 Polish`, `Roadmap Week: Week of Jun 7`, with `Start Date 2026-06-09`, `Target Date 2026-06-10`, and issue milestone `v1.0 Polish`.
 - 2026-05-26T09:26:00Z [CODE] Card tiles now surface checklist and todo progress counts directly on the board face with a small UI-only diff; persistence, parsing formats, controller flow, and the item editor behavior remain unchanged.

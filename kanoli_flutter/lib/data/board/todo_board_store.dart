@@ -150,6 +150,39 @@ class TodoBoardStore {
     return counts;
   }
 
+  Map<String, List<String>> searchableTextByCardId({required String text}) {
+    final textByCardId = <String, List<String>>{};
+    final rawLines = text.split('\n').toList();
+
+    if (text.endsWith('\n') || text.endsWith('\r\n')) {
+      rawLines.removeLast();
+    }
+
+    for (final rawLine in rawLines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) {
+        continue;
+      }
+
+      final isCompleted = line.startsWith('x ');
+      final activeLine = isCompleted ? line.substring(2) : line;
+      final cardId = _cardIdForTodoLine(activeLine);
+      if (cardId == null || cardId.isEmpty) {
+        continue;
+      }
+
+      final todoEntry = TodoListEntry.fromLine(
+        line: _todoLineForCurrentCardEditor(activeLine),
+        isCompleted: isCompleted,
+      );
+      if (todoEntry.text.trim().isEmpty) continue;
+
+      textByCardId.putIfAbsent(cardId, () => <String>[]).add(todoEntry.text);
+    }
+
+    return textByCardId;
+  }
+
   String serialize({
     required List<TodoListEntry> currentCardItems,
     required List<String> otherLines,

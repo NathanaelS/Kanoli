@@ -15,6 +15,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/board/todo_board_store.dart';
 import '../../../domain/board/board_entities.dart';
 import '../application/board_session_controller.dart';
+import '../application/card_search.dart';
+import 'card_search_palette.dart';
 import 'item_editor_sheet.dart';
 
 class BoardWorkspacePage extends StatefulWidget {
@@ -48,6 +50,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final FocusNode _newItemTitleFocusNode = FocusNode();
   final FocusNode _boardTabRowFocusNode = FocusNode();
   bool _dialogInProgress = false;
+  bool _cardSearchPaletteVisible = false;
   bool _missingSessionPromptVisible = false;
   static const String _confirmDeleteColumnPrefKey =
       'kanoli.confirm.deleteColumn.v2';
@@ -188,10 +191,20 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
             ),
           ),
         );
+        final shortcutScaffold = Focus(
+          autofocus: true,
+          child: CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.keyP, meta: true): () =>
+                  unawaited(_openCardSearchPalette()),
+            },
+            child: scaffold,
+          ),
+        );
 
         if (!(Platform.isMacOS &&
             defaultTargetPlatform == TargetPlatform.macOS)) {
-          return scaffold;
+          return shortcutScaffold;
         }
 
         return PlatformMenuBar(
@@ -322,6 +335,14 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 PlatformMenuItemGroup(
                   members: <PlatformMenuItem>[
                     PlatformMenuItem(
+                      label: 'Search Cards',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyP,
+                        meta: true,
+                      ),
+                      onSelected: () => unawaited(_openCardSearchPalette()),
+                    ),
+                    PlatformMenuItem(
                       label: 'Undo',
                       shortcut: const SingleActivator(
                         LogicalKeyboardKey.keyZ,
@@ -395,7 +416,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               ],
             ),
           ],
-          child: scaffold,
+          child: shortcutScaffold,
         );
       },
     );
@@ -1055,6 +1076,58 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         ),
       );
       return const <String, TodoBoardItemCounts>{};
+    }
+  }
+
+  Future<void> _openCardSearchPalette() async {
+    if (!widget.controller.hasActiveBoard || _cardSearchPaletteVisible) {
+      return;
+    }
+
+    _cardSearchPaletteVisible = true;
+    final todoTextByCardId = _searchableTodoTextByCardId();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return CardSearchPalette(
+            columns: widget.controller.columns.toList(),
+            todoTextByCardId: todoTextByCardId,
+            onSelected: (CardSearchResult result) {
+              unawaited(_openItemEditor(result.itemId));
+            },
+          );
+        },
+      );
+    } finally {
+      _cardSearchPaletteVisible = false;
+    }
+  }
+
+  Map<String, List<String>> _searchableTodoTextByCardId() {
+    final path = widget.controller.activeTodoPath;
+    if (path == null || path.trim().isEmpty) {
+      return const <String, List<String>>{};
+    }
+
+    try {
+      final todoFile = File(path);
+      if (!todoFile.existsSync()) {
+        return const <String, List<String>>{};
+      }
+      return _todoBoardStore.searchableTextByCardId(
+        text: todoFile.readAsStringSync(),
+      );
+    } on FileSystemException catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'kanoli',
+          context: ErrorDescription('while reading todo text for card search'),
+        ),
+      );
+      return const <String, List<String>>{};
     }
   }
 
