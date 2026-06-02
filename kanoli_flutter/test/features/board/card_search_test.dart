@@ -118,6 +118,41 @@ void main() {
 
     expect(searchBoardCards(columns: columns, query: '   '), isEmpty);
   });
+
+  test('searches all open board inputs with board context', () {
+    final results = searchOpenBoardCards(
+      boards: <CardSearchBoard>[
+        CardSearchBoard(
+          title: 'Roadmap',
+          tabId: 'tab-a',
+          columns: <BoardColumn>[
+            BoardColumn(
+              title: 'Doing',
+              items: <BoardItem>[BoardItem(id: 'a', title: 'Alpha task')],
+            ),
+          ],
+        ),
+        CardSearchBoard(
+          title: 'Launch',
+          tabId: 'tab-b',
+          columns: <BoardColumn>[
+            BoardColumn(
+              title: 'Next',
+              items: <BoardItem>[BoardItem(id: 'b', title: 'Beta task')],
+            ),
+          ],
+        ),
+      ],
+      query: 'task',
+    );
+
+    expect(results.map((CardSearchResult result) => result.itemId), <String>[
+      'a',
+      'b',
+    ]);
+    expect(results.last.boardTitle, 'Launch');
+    expect(results.last.boardTabId, 'tab-b');
+  });
 }
 
 List<String> _ids(List<CardSearchResult> results) {

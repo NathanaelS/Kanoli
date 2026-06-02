@@ -1085,16 +1085,36 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     _cardSearchPaletteVisible = true;
-    final todoTextByCardId = _searchableTodoTextByCardId();
+    final snapshots = widget.controller.openBoardSnapshots();
+    final activeSnapshot = widget.controller.activeSnapshot();
+    if (activeSnapshot == null) {
+      _cardSearchPaletteVisible = false;
+      return;
+    }
+
+    final todoTextByCardId = await _searchableTodoTextByCardId(snapshots);
+    if (!mounted) {
+      _cardSearchPaletteVisible = false;
+      return;
+    }
+
+    final openBoards = snapshots.map((OpenBoardSnapshot snapshot) {
+      return CardSearchBoard(
+        title: snapshot.boardTitle,
+        tabId: snapshot.tabId,
+        columns: snapshot.columns,
+      );
+    }).toList();
     try {
       await showDialog<void>(
         context: context,
         builder: (BuildContext context) {
           return CardSearchPalette(
-            columns: widget.controller.columns.toList(),
+            columns: activeSnapshot.columns,
+            openBoards: openBoards,
             todoTextByCardId: todoTextByCardId,
             onSelected: (CardSearchResult result) {
-              unawaited(_openItemEditor(result.itemId));
+              unawaited(_openSearchResult(result));
             },
           );
         },
@@ -1104,12 +1124,26 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
   }
 
-  Map<String, List<String>> _searchableTodoTextByCardId() {
-    final path = widget.controller.activeTodoPath;
-    if (path == null || path.trim().isEmpty) {
-      return const <String, List<String>>{};
+  Future<Map<String, List<String>>> _searchableTodoTextByCardId(
+    List<OpenBoardSnapshot> snapshots,
+  ) async {
+    final textByCardId = <String, List<String>>{};
+    for (final snapshot in snapshots) {
+      final path =
+          await widget.controller.todoPathForBoard(snapshot.boardPath) ??
+          _todoBoardStore.defaultTodoListPath(
+            boardFilePath: snapshot.boardPath,
+          );
+      if (path.trim().isEmpty) {
+        continue;
+      }
+      textByCardId.addAll(_searchableTodoTextAtPath(path));
     }
 
+    return textByCardId;
+  }
+
+  Map<String, List<String>> _searchableTodoTextAtPath(String path) {
     try {
       final todoFile = File(path);
       if (!todoFile.existsSync()) {
@@ -1129,6 +1163,14 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       );
       return const <String, List<String>>{};
     }
+  }
+
+  Future<void> _openSearchResult(CardSearchResult result) async {
+    final boardTabId = result.boardTabId;
+    if (boardTabId != null && boardTabId != widget.controller.selectedTabId) {
+      await widget.controller.selectBoardTab(boardTabId);
+    }
+    await _openItemEditor(result.itemId);
   }
 
   Widget _columnDropTarget({

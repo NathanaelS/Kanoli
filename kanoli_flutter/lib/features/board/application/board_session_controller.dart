@@ -30,10 +30,17 @@ class BoardTabState {
 }
 
 class OpenBoardSnapshot {
-  OpenBoardSnapshot({required this.boardTitle, required this.columns});
+  OpenBoardSnapshot({
+    required this.boardTitle,
+    required this.columns,
+    required this.tabId,
+    required this.boardPath,
+  });
 
   final String boardTitle;
   final List<BoardColumn> columns;
+  final String tabId;
+  final String boardPath;
 }
 
 class BoardSessionController extends ChangeNotifier {
@@ -201,6 +208,18 @@ class BoardSessionController extends ChangeNotifier {
     return tab?.path;
   }
 
+  Future<String?> todoPathForBoard(String boardPath) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final normalizedBoardPath = File(boardPath).absolute.path;
+    final stored = _prefs!.getString(_todoPathPrefsKey(normalizedBoardPath));
+    if (stored == null || stored.trim().isEmpty) {
+      return null;
+    }
+
+    final normalizedTodoPath = File(stored).absolute.path;
+    return File(normalizedTodoPath).existsSync() ? normalizedTodoPath : null;
+  }
+
   List<BoardColumn> get visibleColumns {
     if (_showArchiveOnly) {
       return _columns.where(_isArchiveColumn).toList();
@@ -277,7 +296,12 @@ class BoardSessionController extends ChangeNotifier {
       return null;
     }
 
-    return OpenBoardSnapshot(boardTitle: tab.title, columns: _columns);
+    return OpenBoardSnapshot(
+      boardTitle: tab.title,
+      columns: _columns,
+      tabId: tab.id,
+      boardPath: tab.path,
+    );
   }
 
   List<OpenBoardSnapshot> openBoardSnapshots() {
@@ -286,7 +310,12 @@ class BoardSessionController extends ChangeNotifier {
     for (final tab in _boardTabs) {
       if (tab.id == _selectedTabId) {
         snapshots.add(
-          OpenBoardSnapshot(boardTitle: tab.title, columns: _columns),
+          OpenBoardSnapshot(
+            boardTitle: tab.title,
+            columns: _columns,
+            tabId: tab.id,
+            boardPath: tab.path,
+          ),
         );
         continue;
       }
@@ -297,7 +326,12 @@ class BoardSessionController extends ChangeNotifier {
       }
 
       snapshots.add(
-        OpenBoardSnapshot(boardTitle: tab.title, columns: loadResult.columns),
+        OpenBoardSnapshot(
+          boardTitle: tab.title,
+          columns: loadResult.columns,
+          tabId: tab.id,
+          boardPath: tab.path,
+        ),
       );
     }
 
@@ -935,16 +969,11 @@ class BoardSessionController extends ChangeNotifier {
     // Each board remembers its own optional todo sidecar path.
     _prefs ??= await SharedPreferences.getInstance();
     final normalizedBoardPath = File(boardPath).absolute.path;
-    final key = 'kanoli.todo.path.v1::$normalizedBoardPath';
-    final stored = _prefs!.getString(key);
-    if (stored == null || stored.trim().isEmpty) {
-      _activeTodoPath = null;
-      return;
-    }
-    final normalizedTodoPath = File(stored).absolute.path;
-    _activeTodoPath = File(normalizedTodoPath).existsSync()
-        ? normalizedTodoPath
-        : null;
+    _activeTodoPath = await todoPathForBoard(normalizedBoardPath);
+  }
+
+  String _todoPathPrefsKey(String normalizedBoardPath) {
+    return 'kanoli.todo.path.v1::$normalizedBoardPath';
   }
 
   Future<void> _rewriteSessionPaths(

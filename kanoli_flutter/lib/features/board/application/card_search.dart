@@ -9,18 +9,24 @@ class CardSearchResult {
     required this.title,
     required this.columnTitle,
     required this.matchKinds,
+    this.boardTitle,
+    this.boardTabId,
   });
 
   final String itemId;
   final String title;
   final String columnTitle;
   final List<CardSearchMatchKind> matchKinds;
+  final String? boardTitle;
+  final String? boardTabId;
 }
 
 List<CardSearchResult> searchBoardCards({
   required List<BoardColumn> columns,
   required String query,
   Map<String, List<String>> todoTextByCardId = const <String, List<String>>{},
+  String? boardTitle,
+  String? boardTabId,
 }) {
   final normalizedQuery = query.trim().toLowerCase();
   if (normalizedQuery.isEmpty) {
@@ -45,6 +51,8 @@ List<CardSearchResult> searchBoardCards({
           title: item.displayTitle,
           columnTitle: column.menuTitle,
           matchKinds: matchKinds,
+          boardTitle: boardTitle,
+          boardTabId: boardTabId,
         ),
       );
     }
@@ -54,6 +62,41 @@ List<CardSearchResult> searchBoardCards({
     return a.matchKinds.first.index.compareTo(b.matchKinds.first.index);
   });
   return results;
+}
+
+List<CardSearchResult> searchOpenBoardCards({
+  required List<CardSearchBoard> boards,
+  required String query,
+  Map<String, List<String>> todoTextByCardId = const <String, List<String>>{},
+}) {
+  final results = <CardSearchResult>[];
+  for (final board in boards) {
+    results.addAll(
+      searchBoardCards(
+        columns: board.columns,
+        query: query,
+        todoTextByCardId: todoTextByCardId,
+        boardTitle: board.title,
+        boardTabId: board.tabId,
+      ),
+    );
+  }
+  results.sort((CardSearchResult a, CardSearchResult b) {
+    return a.matchKinds.first.index.compareTo(b.matchKinds.first.index);
+  });
+  return results;
+}
+
+class CardSearchBoard {
+  const CardSearchBoard({
+    required this.title,
+    required this.tabId,
+    required this.columns,
+  });
+
+  final String title;
+  final String tabId;
+  final List<BoardColumn> columns;
 }
 
 List<CardSearchMatchKind> _matchKindsForItem({

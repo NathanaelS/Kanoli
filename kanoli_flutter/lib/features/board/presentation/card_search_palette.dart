@@ -9,11 +9,13 @@ class CardSearchPalette extends StatefulWidget {
   const CardSearchPalette({
     super.key,
     required this.columns,
+    required this.openBoards,
     required this.todoTextByCardId,
     required this.onSelected,
   });
 
   final List<BoardColumn> columns;
+  final List<CardSearchBoard> openBoards;
   final Map<String, List<String>> todoTextByCardId;
   final ValueChanged<CardSearchResult> onSelected;
 
@@ -23,6 +25,7 @@ class CardSearchPalette extends StatefulWidget {
 
 class _CardSearchPaletteState extends State<CardSearchPalette> {
   final TextEditingController _queryController = TextEditingController();
+  CardSearchScope _scope = CardSearchScope.currentBoard;
   int _selectedIndex = 0;
 
   @override
@@ -76,6 +79,26 @@ class _CardSearchPaletteState extends State<CardSearchPalette> {
                   onSubmitted: (_) => _selectCurrent(_results()),
                 ),
                 const SizedBox(height: 10),
+                SegmentedButton<CardSearchScope>(
+                  segments: const <ButtonSegment<CardSearchScope>>[
+                    ButtonSegment<CardSearchScope>(
+                      value: CardSearchScope.currentBoard,
+                      label: Text('Current Board'),
+                    ),
+                    ButtonSegment<CardSearchScope>(
+                      value: CardSearchScope.allOpenBoards,
+                      label: Text('All Open Boards'),
+                    ),
+                  ],
+                  selected: <CardSearchScope>{_scope},
+                  onSelectionChanged: (Set<CardSearchScope> selected) {
+                    setState(() {
+                      _scope = selected.single;
+                      _selectedIndex = 0;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
                 const _SearchExamples(),
                 const SizedBox(height: 12),
                 Flexible(child: _resultsBody(results)),
@@ -118,7 +141,7 @@ class _CardSearchPaletteState extends State<CardSearchPalette> {
             key: ValueKey<String>('card-search-result-${result.itemId}'),
             selected: selected,
             title: Text(result.title),
-            subtitle: Text(result.columnTitle),
+            subtitle: Text(_resultSubtitle(result)),
             trailing: Wrap(
               spacing: 6,
               children: result.matchKinds.map(_matchChip).toList(),
@@ -138,11 +161,29 @@ class _CardSearchPaletteState extends State<CardSearchPalette> {
   }
 
   List<CardSearchResult> _results() {
+    if (_scope == CardSearchScope.allOpenBoards) {
+      return searchOpenBoardCards(
+        boards: widget.openBoards,
+        query: _queryController.text,
+        todoTextByCardId: widget.todoTextByCardId,
+      );
+    }
+
     return searchBoardCards(
       columns: widget.columns,
       query: _queryController.text,
       todoTextByCardId: widget.todoTextByCardId,
     );
+  }
+
+  String _resultSubtitle(CardSearchResult result) {
+    final boardTitle = result.boardTitle;
+    if (_scope == CardSearchScope.allOpenBoards &&
+        boardTitle != null &&
+        boardTitle.trim().isNotEmpty) {
+      return '$boardTitle / ${result.columnTitle}';
+    }
+    return result.columnTitle;
   }
 
   void _moveSelection(int direction, int resultCount) {
@@ -187,6 +228,8 @@ class _CardSearchPaletteState extends State<CardSearchPalette> {
     }
   }
 }
+
+enum CardSearchScope { currentBoard, allOpenBoards }
 
 class _SearchExamples extends StatelessWidget {
   const _SearchExamples();

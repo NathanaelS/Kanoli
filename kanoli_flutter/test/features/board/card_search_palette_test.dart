@@ -55,6 +55,51 @@ void main() {
     expect(find.byType(CardSearchPalette), findsNothing);
   });
 
+  testWidgets('all open boards scope searches other board results', (
+    WidgetTester tester,
+  ) async {
+    CardSearchResult? selected;
+
+    await _pumpPalette(
+      tester,
+      columns: _columns(),
+      openBoards: <CardSearchBoard>[
+        CardSearchBoard(
+          title: 'Current',
+          tabId: 'current',
+          columns: _columns(),
+        ),
+        CardSearchBoard(
+          title: 'Other',
+          tabId: 'other',
+          columns: <BoardColumn>[
+            BoardColumn(
+              title: 'Backlog',
+              items: <BoardItem>[BoardItem(id: 'gamma', title: 'Gamma task')],
+            ),
+          ],
+        ),
+      ],
+      onSelected: (CardSearchResult result) {
+        selected = result;
+      },
+    );
+
+    await tester.tap(find.text('All Open Boards'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'gamma');
+    await tester.pump();
+
+    expect(find.text('Gamma task'), findsOneWidget);
+    expect(find.text('Other / Backlog'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(selected?.itemId, 'gamma');
+    expect(selected?.boardTabId, 'other');
+  });
+
   testWidgets('escape closes without selecting a result', (
     WidgetTester tester,
   ) async {
@@ -79,6 +124,7 @@ void main() {
 Future<void> _pumpPalette(
   WidgetTester tester, {
   required List<BoardColumn> columns,
+  List<CardSearchBoard>? openBoards,
   required ValueChanged<CardSearchResult> onSelected,
 }) async {
   await tester.pumpWidget(
@@ -91,6 +137,15 @@ Future<void> _pumpPalette(
               builder: (BuildContext context) {
                 return CardSearchPalette(
                   columns: columns,
+                  openBoards:
+                      openBoards ??
+                      <CardSearchBoard>[
+                        CardSearchBoard(
+                          title: 'Current',
+                          tabId: 'current',
+                          columns: columns,
+                        ),
+                      ],
                   todoTextByCardId: const <String, List<String>>{},
                   onSelected: onSelected,
                 );

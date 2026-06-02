@@ -19,6 +19,7 @@
 
 ## [PROGRESS]
 
+- 2026-06-01T00:13:51Z [CODE] Added fast-search scope selection for current board vs all open boards; all-open-board results carry board/tab context and selection switches to the source tab before opening the existing card editor.
 - 2026-05-31T23:32:58Z [CODE] Enhanced fast card search palette guidance with inline example criteria and extended matching to support `+label` and `due:YYYY-MM-DD`/date queries.
 - 2026-05-31T23:26:07Z [CODE] Fixed Cmd+P fast card search invocation on macOS by adding a native Flutter `PlatformMenuItem` shortcut (`Edit > Search Cards`) and guarding against duplicate palette dialogs.
 - 2026-05-31T23:16:54Z [CODE] Implemented active-board Cmd+P fast card search in Flutter: pure search over title/labels/body-notes/checklists/todo text, read-only todo sidecar text grouping, palette UI with keyboard navigation, and workspace shortcut routing to the existing item editor.
@@ -77,6 +78,7 @@
 
 ## [OUTCOMES]
 
+- 2026-06-01T00:13:51Z [TOOL] Fast-search scope validation passed: `flutter analyze`, focused search/palette/controller tests, and full `flutter test` completed successfully.
 - 2026-05-31T23:32:58Z [TOOL] Search guidance/date-label enhancement validation passed: `flutter analyze`, focused search/palette tests, and full `flutter test` completed successfully.
 - 2026-05-31T23:26:07Z [TOOL] Cmd+P invocation fix validation passed: `flutter analyze`, focused fast-search tests, and full `flutter test` all completed successfully.
 - 2026-05-31T23:16:54Z [TOOL] Fast card search validation passed: targeted `flutter analyze` for the edited search/palette/todo/workspace files reported no issues, focused search tests passed, and full `flutter test` passed.
