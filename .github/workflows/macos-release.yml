@@ -1,0 +1,159 @@
+name: macOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, without the leading v
+        required: true
+        type: string
+      create_github_release:
+        description: Create or update a draft GitHub Release
+        required: true
+        default: true
+        type: boolean
+      prerelease:
+        description: Mark the GitHub Release as a prerelease
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-sign-notarize:
+    name: Build, sign, notarize, and publish macOS DMG
+    runs-on: macos-latest
+
+    env:
+      KANOLI_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      KANOLI_NOTARY_PROFILE: kanoli-notary
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: kanoli_flutter
+        run: flutter pub get
+
+      - name: Import Apple signing certificate
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id-application.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/kanoli-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+
+          echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      - name: Store Apple notarization credentials
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          xcrun notarytool store-credentials "$KANOLI_NOTARY_PROFILE" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+
+      - name: Build signed and notarized DMG
+        run: ./scripts/release/build_signed_notarized_macos_dmg.sh "${{ inputs.version }}"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanoli-macos-${{ inputs.version }}
+          path: |
+            kanoli_flutter/dist/Kanoli-${{ inputs.version }}.dmg
+            kanoli_flutter/dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Write release notes
+        if: ${{ inputs.create_github_release }}
+        run: |
+          set -euo pipefail
+
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          ## Verification
+
+          Download the DMG and `SHA256SUMS.txt` from this release.
+
+          ```bash
+          shasum -a 256 Kanoli-${{ inputs.version }}.dmg
+          ```
+
+          Compare the output with the matching line in `SHA256SUMS.txt`.
+
+          macOS signing identity:
+
+          ```text
+          Developer ID Application: NATHANAEL CHRISTOPHER STUTZ (5Z6FYPML23)
+          ```
+
+          Apple Team ID:
+
+          ```text
+          5Z6FYPML23
+          ```
+          NOTES
+
+      - name: Create or update draft GitHub Release
+        if: ${{ inputs.create_github_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          TAG="v$VERSION"
+          RELEASE_ARGS=(--draft --title "Kanoli $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md")
+
+          if [[ "$PRERELEASE" == "true" ]]; then
+            RELEASE_ARGS+=(--prerelease)
+          fi
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "${RELEASE_ARGS[@]}"
+          else
+            gh release edit "$TAG" "${RELEASE_ARGS[@]}"
+          fi
+
+          gh release upload "$TAG" \
+            "kanoli_flutter/dist/Kanoli-$VERSION.dmg" \
+            "kanoli_flutter/dist/SHA256SUMS.txt" \
+            --clobber
