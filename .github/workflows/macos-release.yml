@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -48,6 +48,7 @@ jobs:
         env:
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
 
@@ -75,7 +76,14 @@ jobs:
             -k "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
 
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          SIGNING_IDENTITIES="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH")"
+          printf '%s\n' "$SIGNING_IDENTITIES"
+
+          if ! printf '%s\n' "$SIGNING_IDENTITIES" | grep -F "Developer ID Application:" | grep -F "($APPLE_TEAM_ID)" >/dev/null; then
+            echo "::error::The imported .p12 does not contain a valid Developer ID Application identity for Team ID $APPLE_TEAM_ID."
+            echo "::error::Export the Developer ID Application certificate from Keychain Access > My Certificates, including its private key."
+            exit 1
+          fi
 
       - name: Store Apple notarization credentials
         env:
