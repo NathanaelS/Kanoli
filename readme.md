@@ -8,7 +8,7 @@
 
 <!-- CODEX DO NOT EDIT -->
 
-Kanoli is a local-first, Trello-inspired kanban app that stores board data in plain Markdown and optional `todo.txt` files. The app was originally created in the Swift language and that repo in it's current state can be found [here](https://github.com/NathanaelS/KanoliSwift). This repository contains the Flutter/Dart rebuild intended to make Kanoli useable on macOS, Windows, iOS, and Android, and probably Linux just because it's the only one left.
+Kanoli is a local-first, Trello-inspired kanban app centered on the philosophy of having your data available to you locally and regardless of the app working. 
 
 Kanoli is the brain child of me, Nathanael Stutz, entirely vibecoded inside of Codex. I am not a software engineer and I do not claim that this app is without flaws. This app is built by me, for me, for my system, in an effort to have more of my information stored and handled locally. I am making it open source and public facing in the hopes that it can either help or inspire others.
 
@@ -21,9 +21,12 @@ And now, begin the AI generated paragraphs edited by me.......
 
 ## Quick Start
 
-I currently have a macOS file available for download. Download the latest `.dmg` from the [GitHub Releases page](https://github.com/NathanaelS/Kanoli/releases), install Kanoli, and open the app normally.
+Download the latest `.dmg` from the [GitHub Releases page](https://github.com/NathanaelS/Kanoli/releases), install Kanoli, and open the app normally.
 
-If macOS blocks launch, go to **System Settings > Privacy & Security** and allow Kanoli to open.
+Before installing, verify the checksum and signing identity using
+[Verifying Kanoli Downloads](docs/security/VERIFYING_DOWNLOADS.md).
+
+For the layperson or someone that doesn't use command line regularly, this might seem daunting, but I encourage you to follow the steps in an effort to understand app security a little better, and in the day and age of AI vibecoding everything everywhere, it's good to know how to verify authenticity.
 
 ## Dev Branch
 
@@ -55,7 +58,7 @@ Open an issue in this repository and include:
 
 Issue tracker: [GitHub Issues](https://github.com/NathanaelS/Kanoli/issues)
 
-Project tracking format and issue template examples live in [.github/PROJECT_LAYOUT.md](.github/PROJECT_LAYOUT.md). The local roadmap board is still the human-readable source for broad planning, while GitHub Issues are for specific bugs, tasks, and feature requests.
+Project tracking format and issue template examples live in [.github/PROJECT_LAYOUT.md](.github/PROJECT_LAYOUT.md).
 
 ## Contributing
 
@@ -63,13 +66,11 @@ Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for Fl
 
 ## Roadmap
 
-I am currently tracking build status and feature ideas in the following board, [Kanoli_Roadmap_Board.md](Kanoli_Roadmap_Board.md). 
-
 Current ideas that I am rattling off my head in no particular order:
 
 - Cleaning up UI and implementing "prettier" features.
 - Markdown editor inside of app for drafting documents.
-- Mermaid support for creating flow charts and diagrams using markdown
+- Mermaid support for timeline Gantt chart visualization
 - File attachment support
 - Calendar view?
 - Better filtering conditions
