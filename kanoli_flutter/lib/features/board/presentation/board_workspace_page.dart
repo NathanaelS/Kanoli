@@ -12,8 +12,11 @@ import '../../../core/config/app_environment.dart';
 import '../../../core/diagnostics/diagnostics_store.dart';
 import '../../../core/files/board_file_access_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/board/todo_board_store.dart';
 import '../../../domain/board/board_entities.dart';
 import '../application/board_session_controller.dart';
+import '../application/card_search.dart';
+import 'card_search_palette.dart';
 import 'item_editor_sheet.dart';
 
 class BoardWorkspacePage extends StatefulWidget {
@@ -34,6 +37,7 @@ class BoardWorkspacePage extends StatefulWidget {
 
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final AuraIntensity _auraIntensity = AuraIntensity.subtle;
+  final TodoBoardStore _todoBoardStore = TodoBoardStore();
   static const MethodChannel _nativeDialogsChannel = MethodChannel(
     'kanoli/native_dialogs',
   );
@@ -44,7 +48,9 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final TextEditingController _newItemTitleController = TextEditingController();
   final FocusNode _newColumnTitleFocusNode = FocusNode();
   final FocusNode _newItemTitleFocusNode = FocusNode();
+  final FocusNode _boardTabRowFocusNode = FocusNode();
   bool _dialogInProgress = false;
+  bool _cardSearchPaletteVisible = false;
   bool _missingSessionPromptVisible = false;
   static const String _confirmDeleteColumnPrefKey =
       'kanoli.confirm.deleteColumn.v2';
@@ -59,6 +65,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     _newItemTitleController.dispose();
     _newColumnTitleFocusNode.dispose();
     _newItemTitleFocusNode.dispose();
+    _boardTabRowFocusNode.dispose();
     super.dispose();
   }
 
@@ -67,7 +74,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     // The workspace listens to the session controller and redraws around the
     // latest active board state.
     final visuals = AppTheme.visuals(_auraIntensity);
-    final body = ListenableBuilder(
+    return ListenableBuilder(
       listenable: widget.controller,
       builder: (BuildContext context, Widget? child) {
         _showErrorIfNeeded(context);
@@ -184,211 +191,234 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
             ),
           ),
         );
+        final shortcutScaffold = Focus(
+          autofocus: true,
+          child: CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.keyP, meta: true): () =>
+                  unawaited(_openCardSearchPalette()),
+            },
+            child: scaffold,
+          ),
+        );
 
-        return scaffold;
-      },
-    );
+        if (!(Platform.isMacOS &&
+            defaultTargetPlatform == TargetPlatform.macOS)) {
+          return shortcutScaffold;
+        }
 
-    if (!(Platform.isMacOS && defaultTargetPlatform == TargetPlatform.macOS)) {
-      return body;
-    }
-
-    return PlatformMenuBar(
-      menus: <PlatformMenuItem>[
-        PlatformMenu(
-          label: 'Kanoli',
+        return PlatformMenuBar(
           menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.about,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.about,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.servicesSubmenu,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.servicesSubmenu,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.hide,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.hide,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.hideOtherApplications,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.hideOtherApplications,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.showAllApplications,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.showAllApplications,
-                  ),
-                if (PlatformProvidedMenuItem.hasMenu(
-                  PlatformProvidedMenuItemType.quit,
-                ))
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.quit,
-                  ),
-              ],
-            ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'File',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Create Board',
-                  onSelected: () => unawaited(_createBoard()),
-                ),
-                PlatformMenuItem(
-                  label: 'Open Board',
-                  onSelected: () => unawaited(_openBoard()),
-                ),
-                PlatformMenuItem(
-                  label: 'Import Trello JSON',
-                  onSelected: () => unawaited(_importBoard()),
-                ),
-                PlatformMenuItem(
-                  label: 'Close Active Board',
-                  onSelected: () => unawaited(_closeSelectedTab()),
-                ),
-                PlatformMenuItem(
-                  label: 'Close Window',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyW,
-                    meta: true,
-                  ),
-                  onSelected: () => unawaited(_hideWindowViaNative()),
+            PlatformMenu(
+              label: 'Kanoli',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.about,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.about,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.servicesSubmenu,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.servicesSubmenu,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.hide,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.hide,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.hideOtherApplications,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type:
+                            PlatformProvidedMenuItemType.hideOtherApplications,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.showAllApplications,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.showAllApplications,
+                      ),
+                    if (PlatformProvidedMenuItem.hasMenu(
+                      PlatformProvidedMenuItemType.quit,
+                    ))
+                      const PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.quit,
+                      ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'View',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Show Kanoli Window',
-                  onSelected: () => unawaited(_showWindowViaNative()),
-                ),
-              ],
-            ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'Tools',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Privacy Settings',
-                  onSelected: () => unawaited(_openPrivacySettings()),
-                ),
-                PlatformMenuItem(
-                  label: 'Diagnostics',
-                  onSelected: () => unawaited(_openDiagnosticsPanel()),
-                ),
-                PlatformMenuItem(
-                  label: 'Reveal Active Board in Finder',
-                  onSelected: () => unawaited(_revealActiveBoardInFinder()),
-                ),
-                PlatformMenuItem(
-                  label: 'Copy Active Board Path',
-                  onSelected: () => unawaited(_copyActiveBoardPath()),
-                ),
-              ],
-            ),
-          ],
-        ),
-        PlatformMenu(
-          label: 'Edit',
-          menus: <PlatformMenuItem>[
-            PlatformMenuItemGroup(
-              members: <PlatformMenuItem>[
-                PlatformMenuItem(
-                  label: 'Undo',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyZ,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const UndoTextIntent(SelectionChangedCause.keyboard),
-                  ),
-                ),
-                PlatformMenuItem(
-                  label: 'Redo',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyZ,
-                    shift: true,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const RedoTextIntent(SelectionChangedCause.keyboard),
-                  ),
-                ),
-                PlatformMenuItem(
-                  label: 'Cut',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyX,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const CopySelectionTextIntent.cut(
-                      SelectionChangedCause.keyboard,
+            PlatformMenu(
+              label: 'File',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: 'Create Board',
+                      onSelected: () => unawaited(_createBoard()),
                     ),
-                  ),
+                    PlatformMenuItem(
+                      label: 'Open Board',
+                      onSelected: () => unawaited(_openBoard()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Import Trello JSON',
+                      onSelected: () => unawaited(_importBoard()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Close Active Board',
+                      onSelected: () => unawaited(_closeSelectedTab()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Close Window',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyW,
+                        meta: true,
+                      ),
+                      onSelected: () => unawaited(_hideWindowViaNative()),
+                    ),
+                  ],
                 ),
-                PlatformMenuItem(
-                  label: 'Copy',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyC,
-                    meta: true,
-                  ),
-                  onSelected: () =>
-                      Actions.invoke(context, CopySelectionTextIntent.copy),
+              ],
+            ),
+            PlatformMenu(
+              label: 'View',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: widget.controller.showBoardTabBar
+                          ? 'Hide Tab Bar'
+                          : 'Show Tab Bar',
+                      onSelected: () =>
+                          unawaited(_toggleBoardTabBarVisibility()),
+                    ),
+                  ],
                 ),
-                PlatformMenuItem(
-                  label: 'Paste',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyV,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const PasteTextIntent(SelectionChangedCause.keyboard),
-                  ),
+              ],
+            ),
+            PlatformMenu(
+              label: 'Tools',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: 'Privacy Settings',
+                      onSelected: () => unawaited(_openPrivacySettings()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Diagnostics',
+                      onSelected: () => unawaited(_openDiagnosticsPanel()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Reveal Active Board in Finder',
+                      onSelected: () => unawaited(_revealActiveBoardInFinder()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Copy Active Board Path',
+                      onSelected: () => unawaited(_copyActiveBoardPath()),
+                    ),
+                  ],
                 ),
-                PlatformMenuItem(
-                  label: 'Select All',
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyA,
-                    meta: true,
-                  ),
-                  onSelected: () => Actions.invoke(
-                    context,
-                    const SelectAllTextIntent(SelectionChangedCause.keyboard),
-                  ),
+              ],
+            ),
+            PlatformMenu(
+              label: 'Edit',
+              menus: <PlatformMenuItem>[
+                PlatformMenuItemGroup(
+                  members: <PlatformMenuItem>[
+                    PlatformMenuItem(
+                      label: 'Search Cards',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyP,
+                        meta: true,
+                      ),
+                      onSelected: () => unawaited(_openCardSearchPalette()),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Undo',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyZ,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const UndoTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Redo',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyZ,
+                        shift: true,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const RedoTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Cut',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyX,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const CopySelectionTextIntent.cut(
+                          SelectionChangedCause.keyboard,
+                        ),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Copy',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyC,
+                        meta: true,
+                      ),
+                      onSelected: () =>
+                          Actions.invoke(context, CopySelectionTextIntent.copy),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Paste',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyV,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const PasteTextIntent(SelectionChangedCause.keyboard),
+                      ),
+                    ),
+                    PlatformMenuItem(
+                      label: 'Select All',
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyA,
+                        meta: true,
+                      ),
+                      onSelected: () => Actions.invoke(
+                        context,
+                        const SelectAllTextIntent(
+                          SelectionChangedCause.keyboard,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ],
-        ),
-      ],
-      child: body,
+          child: shortcutScaffold,
+        );
+      },
     );
   }
 
@@ -472,37 +502,42 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     // and add-column affordance.
     final tabs = widget.controller.boardTabs;
     final selectedTabId = widget.controller.selectedTabId;
+    final todoCountsByCardId = _todoCountsByCardId();
     final columns = widget.controller.isFilterActive
         ? widget.controller.filteredResultsColumns()
         : widget.controller.visibleColumns;
 
     return Column(
       children: <Widget>[
-        if (tabs.isNotEmpty)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: tabs.map((BoardTabState tab) {
-                final isSelected = tab.id == selectedTabId;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(tab.title),
-                    selected: isSelected,
-                    backgroundColor: AppTheme.selection,
-                    selectedColor: AppTheme.secondary,
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? AppTheme.background
-                          : AppTheme.foreground,
-                      fontWeight: FontWeight.w600,
+        if (widget.controller.showBoardTabBar && tabs.isNotEmpty)
+          Focus(
+            focusNode: _boardTabRowFocusNode,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: tabs.map((BoardTabState tab) {
+                  final isSelected = tab.id == selectedTabId;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(tab.title),
+                      selected: isSelected,
+                      backgroundColor: AppTheme.selection,
+                      selectedColor: AppTheme.secondary,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? AppTheme.background
+                            : AppTheme.foreground,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      side: const BorderSide(color: AppTheme.outline),
+                      onSelected: (_) =>
+                          widget.controller.selectBoardTab(tab.id),
                     ),
-                    side: const BorderSide(color: AppTheme.outline),
-                    onSelected: (_) => widget.controller.selectBoardTab(tab.id),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         if (widget.controller.isFilterActive)
@@ -545,7 +580,12 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 ...columns.map((BoardColumn column) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
-                    child: _columnCard(context, column, visuals),
+                    child: _columnCard(
+                      context,
+                      column,
+                      visuals,
+                      todoCountsByCardId,
+                    ),
                   );
                 }),
                 if (!widget.controller.isFilterActive)
@@ -581,10 +621,11 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     BuildContext context,
     BoardColumn column,
     AuraVisualProfile visuals,
+    Map<String, TodoBoardItemCounts> todoCountsByCardId,
   ) {
     // Columns own inline rename/new-card state and the drop zones between cards.
     return Container(
-      width: 300,
+      width: 320,
       decoration: BoxDecoration(
         gradient: visuals.columnPanelGradient,
         borderRadius: BorderRadius.circular(14),
@@ -633,15 +674,35 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                         ),
                 ),
                 if (!widget.controller.isFilterActive) ...<Widget>[
-                  IconButton(
-                    tooltip: 'Rename column',
-                    icon: const Icon(Icons.edit, size: 18),
-                    onPressed: () => _renameColumn(column),
-                  ),
-                  IconButton(
-                    tooltip: 'Delete column',
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => _deleteColumnWithConfirmation(column),
+                  MenuAnchor(
+                    builder:
+                        (
+                          BuildContext context,
+                          MenuController controller,
+                          Widget? child,
+                        ) {
+                          return IconButton(
+                            tooltip: 'Column actions',
+                            icon: const Icon(Icons.more_horiz, size: 18),
+                            onPressed: () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                          );
+                        },
+                    menuChildren: <Widget>[
+                      MenuItemButton(
+                        onPressed: () => _renameColumn(column),
+                        child: const Text('Rename'),
+                      ),
+                      MenuItemButton(
+                        onPressed: () => _deleteColumnWithConfirmation(column),
+                        child: const Text('Delete Column'),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -681,6 +742,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                                       child: _itemTile(
                                         item: column.items[index],
                                         sourceColumn: column,
+                                        todoCounts:
+                                            todoCountsByCardId[column
+                                                .items[index]
+                                                .id],
                                         visuals: visuals,
                                       ),
                                     ),
@@ -691,6 +756,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                               return _itemTile(
                                 item: item,
                                 sourceColumn: column,
+                                todoCounts: todoCountsByCardId[item.id],
                                 visuals: visuals,
                               );
                             }),
@@ -726,6 +792,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   Widget _itemTile({
     required BoardItem item,
     required BoardColumn sourceColumn,
+    required TodoBoardItemCounts? todoCounts,
     required AuraVisualProfile visuals,
   }) {
     // Card tiles are draggable outside filtered views and open the editor on
@@ -763,33 +830,45 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   onTapOutside: (_) => _commitPendingNewItem(),
                 ),
               )
-            : Text(item.displayTitle),
-        subtitle: item.metadataSummary.isEmpty
-            ? null
-            : Text(item.metadataSummary),
+            : Text(
+                item.displayTitle,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                ),
+              ),
+        subtitle: _itemSubtitle(item: item, todoCounts: todoCounts),
         onTap: _pendingNewItemId == item.id
             ? null
             : () => _openItemEditor(item.id),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (!widget.controller.isFilterActive)
-              IconButton(
-                tooltip: 'Open item editor',
-                icon: const Icon(Icons.open_in_new, size: 18),
-                onPressed: _pendingNewItemId == item.id
-                    ? null
-                    : () => _openItemEditor(item.id),
+            MenuAnchor(
+              builder:
+                  (
+                    BuildContext context,
+                    MenuController controller,
+                    Widget? child,
+                  ) {
+                    return IconButton(
+                      tooltip: 'Item actions',
+                      icon: const Icon(Icons.more_horiz, size: 18),
+                      onPressed: _pendingNewItemId == item.id
+                          ? null
+                          : () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                    );
+                  },
+              menuChildren: _buildItemActionMenuChildren(
+                item: item,
+                sourceColumn: sourceColumn,
               ),
-            IconButton(
-              tooltip: 'Item actions',
-              icon: const Icon(Icons.more_horiz, size: 18),
-              onPressed: _pendingNewItemId == item.id
-                  ? null
-                  : () => _showItemActions(
-                      item: item,
-                      sourceColumn: sourceColumn,
-                    ),
             ),
           ],
         ),
@@ -829,6 +908,269 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               child: tile,
             ),
     );
+  }
+
+  Widget? _itemSubtitle({
+    required BoardItem item,
+    required TodoBoardItemCounts? todoCounts,
+  }) {
+    final children = <Widget>[];
+    final metadataParts = <String>[
+      if (item.priority != null && item.priority!.isNotEmpty)
+        '(${item.priority!})',
+      ...item.labels.map((String label) => '+$label'),
+    ];
+
+    if (metadataParts.isNotEmpty) {
+      children.add(Text(metadataParts.join(' ')));
+    }
+
+    final dueAndOverdueRow = _itemInfoRow(
+      left: item.dueDate != null
+          ? _itemCountBadge(
+              icon: Icons.schedule_outlined,
+              countText: TodoDateFormatter.format(item.dueDate!),
+            )
+          : null,
+      right: item.isOverdue
+          ? _itemAlertBadge(
+              icon: Icons.notifications_active_outlined,
+              text: 'Overdue',
+            )
+          : null,
+      leftFlex: 5,
+      rightFlex: 4,
+    );
+
+    if (dueAndOverdueRow != null) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: 6));
+      }
+      children.add(dueAndOverdueRow);
+    }
+
+    final countsRow = _itemInfoRow(
+      left: item.checklistItemCount > 0
+          ? _itemCountBadge(
+              icon: Icons.checklist_rounded,
+              countText:
+                  '${item.completedChecklistItemCount}/${item.checklistItemCount}',
+            )
+          : null,
+      right: todoCounts != null && todoCounts.total > 0
+          ? _itemCountBadge(
+              icon: Icons.check_box_outlined,
+              countText: todoCounts.overdue > 0
+                  ? '${todoCounts.completed}/${todoCounts.total} · ${todoCounts.overdue} late'
+                  : '${todoCounts.completed}/${todoCounts.total}',
+              isAlert: todoCounts.overdue > 0,
+            )
+          : null,
+      leftFlex: 4,
+      rightFlex: 5,
+    );
+
+    if (countsRow != null) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: 6));
+      }
+      children.add(countsRow);
+    }
+
+    if (children.isEmpty) {
+      return null;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+  }
+
+  Widget? _itemInfoRow({
+    Widget? left,
+    Widget? right,
+    int leftFlex = 1,
+    int rightFlex = 1,
+  }) {
+    if (left == null && right == null) {
+      return null;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(flex: leftFlex, child: left ?? const SizedBox.shrink()),
+        const SizedBox(width: 12),
+        Expanded(flex: rightFlex, child: right ?? const SizedBox.shrink()),
+      ],
+    );
+  }
+
+  Widget _itemCountBadge({
+    required IconData icon,
+    required String countText,
+    bool isAlert = false,
+  }) {
+    final color = isAlert ? Theme.of(context).colorScheme.error : null;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 3),
+        Flexible(
+          child: Text(
+            countText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: TextStyle(color: color, fontSize: 12.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _itemAlertBadge({required IconData icon, required String text}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.error),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Map<String, TodoBoardItemCounts> _todoCountsByCardId() {
+    final path = widget.controller.activeTodoPath;
+    if (path == null || path.trim().isEmpty) {
+      return const <String, TodoBoardItemCounts>{};
+    }
+
+    try {
+      final todoFile = File(path);
+      if (!todoFile.existsSync()) {
+        return const <String, TodoBoardItemCounts>{};
+      }
+      return _todoBoardStore.countsByCardId(text: todoFile.readAsStringSync());
+    } on FileSystemException catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'kanoli',
+          context: ErrorDescription('while reading todo counts for card tiles'),
+        ),
+      );
+      return const <String, TodoBoardItemCounts>{};
+    }
+  }
+
+  Future<void> _openCardSearchPalette() async {
+    if (!widget.controller.hasActiveBoard || _cardSearchPaletteVisible) {
+      return;
+    }
+
+    _cardSearchPaletteVisible = true;
+    final snapshots = widget.controller.openBoardSnapshots();
+    final activeSnapshot = widget.controller.activeSnapshot();
+    if (activeSnapshot == null) {
+      _cardSearchPaletteVisible = false;
+      return;
+    }
+
+    final todoTextByCardId = await _searchableTodoTextByCardId(snapshots);
+    if (!mounted) {
+      _cardSearchPaletteVisible = false;
+      return;
+    }
+
+    final openBoards = snapshots.map((OpenBoardSnapshot snapshot) {
+      return CardSearchBoard(
+        title: snapshot.boardTitle,
+        tabId: snapshot.tabId,
+        columns: snapshot.columns,
+      );
+    }).toList();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return CardSearchPalette(
+            columns: activeSnapshot.columns,
+            openBoards: openBoards,
+            todoTextByCardId: todoTextByCardId,
+            onSelected: (CardSearchResult result) {
+              unawaited(_openSearchResult(result));
+            },
+          );
+        },
+      );
+    } finally {
+      _cardSearchPaletteVisible = false;
+    }
+  }
+
+  Future<Map<String, List<String>>> _searchableTodoTextByCardId(
+    List<OpenBoardSnapshot> snapshots,
+  ) async {
+    final textByCardId = <String, List<String>>{};
+    for (final snapshot in snapshots) {
+      final path =
+          await widget.controller.todoPathForBoard(snapshot.boardPath) ??
+          _todoBoardStore.defaultTodoListPath(
+            boardFilePath: snapshot.boardPath,
+          );
+      if (path.trim().isEmpty) {
+        continue;
+      }
+      textByCardId.addAll(_searchableTodoTextAtPath(path));
+    }
+
+    return textByCardId;
+  }
+
+  Map<String, List<String>> _searchableTodoTextAtPath(String path) {
+    try {
+      final todoFile = File(path);
+      if (!todoFile.existsSync()) {
+        return const <String, List<String>>{};
+      }
+      return _todoBoardStore.searchableTextByCardId(
+        text: todoFile.readAsStringSync(),
+      );
+    } on FileSystemException catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'kanoli',
+          context: ErrorDescription('while reading todo text for card search'),
+        ),
+      );
+      return const <String, List<String>>{};
+    }
+  }
+
+  Future<void> _openSearchResult(CardSearchResult result) async {
+    final boardTabId = result.boardTabId;
+    if (boardTabId != null && boardTabId != widget.controller.selectedTabId) {
+      await widget.controller.selectBoardTab(boardTabId);
+    }
+    await _openItemEditor(result.itemId);
   }
 
   Widget _columnDropTarget({
@@ -1022,114 +1364,86 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
-  Future<void> _showItemActions({
+  List<Widget> _buildItemActionMenuChildren({
     required BoardItem item,
     required BoardColumn sourceColumn,
-  }) async {
-    // Secondary card actions live in a bottom sheet to keep cards compact.
-    final destinationColumns = widget.controller.columns
+  }) {
+    final moveDestinationColumns = widget.controller.columns
         .where((BoardColumn column) => column.id != sourceColumn.id)
         .toList();
+    final copyDestinationColumns = widget.controller.columns.toList();
     final destinationTabs = widget.controller.boardTabs
         .where((BoardTabState tab) => tab.id != widget.controller.selectedTabId)
         .toList();
 
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(12),
-            children: <Widget>[
-              ListTile(
-                title: Text(item.displayTitle),
-                subtitle: const Text('Item actions'),
+    return <Widget>[
+      SubmenuButton(
+        menuChildren: <Widget>[
+          if (moveDestinationColumns.isEmpty)
+            const MenuItemButton(child: Text('No other columns'))
+          else
+            ...moveDestinationColumns.map(
+              (BoardColumn column) => MenuItemButton(
+                onPressed: () =>
+                    widget.controller.moveItemToColumn(item.id, column.id),
+                child: Text(column.menuTitle),
               ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined),
-                title: const Text('Archive'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  widget.controller.archiveItem(item.id);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline),
-                title: const Text('Delete'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  await _deleteItemWithConfirmation(item);
-                },
-              ),
-              if (destinationColumns.isNotEmpty) ...<Widget>[
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Move to Column'),
-                ),
-                ...destinationColumns.map(
-                  (BoardColumn column) => ListTile(
-                    leading: const Icon(Icons.arrow_right_alt),
-                    title: Text(column.menuTitle),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.moveItemToColumn(item.id, column.id);
-                    },
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Copy to Column'),
-                ),
-                ...destinationColumns.map(
-                  (BoardColumn column) => ListTile(
-                    leading: const Icon(Icons.copy_outlined),
-                    title: Text(column.menuTitle),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.copyItemToColumn(item.id, column.id);
-                    },
-                  ),
-                ),
-              ],
-              if (destinationTabs.isNotEmpty) ...<Widget>[
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Move to Other Board'),
-                ),
-                ...destinationTabs.map(
-                  (BoardTabState tab) => ListTile(
-                    leading: const Icon(Icons.arrow_right_alt),
-                    title: Text(tab.title),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.moveItemToBoard(item.id, tab.path);
-                    },
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('Copy to Other Board'),
-                ),
-                ...destinationTabs.map(
-                  (BoardTabState tab) => ListTile(
-                    leading: const Icon(Icons.copy_outlined),
-                    title: Text(tab.title),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.controller.copyItemToBoard(item.id, tab.path);
-                    },
-                  ),
-                ),
-              ],
-            ],
+            ),
+          if (destinationTabs.isNotEmpty) ...<Widget>[
+            const Divider(height: 1),
+            SubmenuButton(
+              menuChildren: destinationTabs
+                  .map(
+                    (BoardTabState tab) => MenuItemButton(
+                      onPressed: () =>
+                          widget.controller.moveItemToBoard(item.id, tab.path),
+                      child: Text(tab.title),
+                    ),
+                  )
+                  .toList(),
+              child: const Text('Other Board'),
+            ),
+          ],
+        ],
+        child: const Text('Move to'),
+      ),
+      SubmenuButton(
+        menuChildren: <Widget>[
+          ...copyDestinationColumns.map(
+            (BoardColumn column) => MenuItemButton(
+              onPressed: () =>
+                  widget.controller.copyItemToColumn(item.id, column.id),
+              child: Text(column.menuTitle),
+            ),
           ),
-        );
-      },
-    );
+          if (destinationTabs.isNotEmpty) ...<Widget>[
+            const Divider(height: 1),
+            SubmenuButton(
+              menuChildren: destinationTabs
+                  .map(
+                    (BoardTabState tab) => MenuItemButton(
+                      onPressed: () =>
+                          widget.controller.copyItemToBoard(item.id, tab.path),
+                      child: Text(tab.title),
+                    ),
+                  )
+                  .toList(),
+              child: const Text('Other Board'),
+            ),
+          ],
+        ],
+        child: const Text('Copy to'),
+      ),
+      const Divider(height: 1),
+      MenuItemButton(
+        onPressed: () => widget.controller.archiveItem(item.id),
+        child: const Text('Archive'),
+      ),
+      MenuItemButton(
+        onPressed: () => _deleteItemWithConfirmation(item),
+        child: const Text('Delete Card'),
+      ),
+    ];
   }
 
   Future<void> _openBoard() async {
@@ -1212,6 +1526,26 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     } on PlatformException {
       // Ignore on unsupported hosts.
     }
+  }
+
+  Future<void> _toggleBoardTabBarVisibility() async {
+    final shouldShow = !widget.controller.showBoardTabBar;
+    if (shouldShow) {
+      await _showWindowViaNative();
+    }
+
+    widget.controller.toggleBoardTabBarVisibility();
+
+    if (!shouldShow) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _boardTabRowFocusNode.requestFocus();
+    });
   }
 
   Future<void> _createBoard() async {

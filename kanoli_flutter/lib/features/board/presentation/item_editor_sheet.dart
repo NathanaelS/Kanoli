@@ -191,77 +191,118 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
 
   Widget _metadataEditor() {
     // Metadata maps directly to Markdown card metadata: priority and due date.
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SizedBox(
-          width: 200,
-          child: DropdownButtonFormField<String>(
-            initialValue: _priorityFormValue,
-            decoration: const InputDecoration(labelText: 'Priority'),
-            items: const <DropdownMenuItem<String>>[
-              DropdownMenuItem<String>(value: '', child: Text('None')),
-              DropdownMenuItem<String>(value: 'A', child: Text('A')),
-              DropdownMenuItem<String>(value: 'B', child: Text('B')),
-              DropdownMenuItem<String>(value: 'C', child: Text('C')),
-              DropdownMenuItem<String>(value: 'D', child: Text('D')),
-            ],
-            onChanged: (String? value) {
-              setState(() {
-                _draft.priority = (value == null || value.isEmpty)
-                    ? null
-                    : value;
-                _saveDraft();
-              });
-            },
-          ),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: <Widget>[
-            Checkbox(
-              value: _draft.dueDate != null,
-              onChanged: (bool? value) {
-                setState(() {
-                  if (value == true) {
-                    _draft.dueDate ??= DateTime.now();
-                  } else {
-                    _draft.dueDate = null;
-                  }
-                  _saveDraft();
-                });
-              },
-            ),
-            const Text('Has due date'),
-            if (_draft.dueDate != null)
-              TextButton(
-                onPressed: () async {
-                  final selected = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: _draft.dueDate ?? DateTime.now(),
-                  );
-
-                  if (selected == null) {
-                    return;
-                  }
-
+            SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+                initialValue: _priorityFormValue,
+                decoration: const InputDecoration(labelText: 'Priority'),
+                items: const <DropdownMenuItem<String>>[
+                  DropdownMenuItem<String>(value: '', child: Text('None')),
+                  DropdownMenuItem<String>(value: 'A', child: Text('A')),
+                  DropdownMenuItem<String>(value: 'B', child: Text('B')),
+                  DropdownMenuItem<String>(value: 'C', child: Text('C')),
+                  DropdownMenuItem<String>(value: 'D', child: Text('D')),
+                ],
+                onChanged: (String? value) {
                   setState(() {
-                    _draft.dueDate = DateTime(
-                      selected.year,
-                      selected.month,
-                      selected.day,
-                    );
+                    _draft.priority = (value == null || value.isEmpty)
+                        ? null
+                        : value;
                     _saveDraft();
                   });
                 },
-                child: Text(TodoDateFormatter.format(_draft.dueDate!)),
               ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Checkbox(
+                  value: _draft.dueDate != null,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        _draft.dueDate ??= DateTime.now();
+                      } else {
+                        _draft.dueDate = null;
+                      }
+                      _saveDraft();
+                    });
+                  },
+                ),
+                const Text('Has due date'),
+                if (_draft.dueDate != null)
+                  TextButton(
+                    onPressed: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        initialDate: _draft.dueDate ?? DateTime.now(),
+                      );
+
+                      if (selected == null) {
+                        return;
+                      }
+
+                      setState(() {
+                        _draft.dueDate = DateTime(
+                          selected.year,
+                          selected.month,
+                          selected.day,
+                        );
+                        _saveDraft();
+                      });
+                    },
+                    child: Text(TodoDateFormatter.format(_draft.dueDate!)),
+                  ),
+              ],
+            ),
           ],
         ),
+        if (_draft.isOverdue) ...<Widget>[
+          const SizedBox(height: 10),
+          _overdueNotice(
+            icon: Icons.notifications_active_outlined,
+            message: 'This card is overdue.',
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _overdueNotice({required IconData icon, required String message}) {
+    final errorColor = Theme.of(context).colorScheme.error;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: errorColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: errorColor.withValues(alpha: 0.35)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: 18, color: errorColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: errorColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -485,6 +526,10 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   Widget _todoEditor() {
     // Todo items live in a sidecar todo.txt file and are scoped to this card by
     // card ID.
+    final overdueTodoCount = _todoItems.where((TodoListEntry entry) {
+      return entry.isOverdue;
+    }).length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -527,6 +572,15 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
           ],
         ),
         if (_todoListPath != null) ...<Widget>[
+          if (overdueTodoCount > 0) ...<Widget>[
+            _overdueNotice(
+              icon: Icons.check_box_outlined,
+              message: overdueTodoCount == 1
+                  ? '1 todo item is overdue.'
+                  : '$overdueTodoCount todo items are overdue.',
+            ),
+            const SizedBox(height: 8),
+          ],
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -690,6 +744,13 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     widget.onSave(_draft);
   }
 
+  void _refreshBoardFace() {
+    // Todo-sidecar edits do not change the card schema, but the board still
+    // needs a session notification so card-face counts/warnings redraw
+    // immediately.
+    widget.onSave(_draft);
+  }
+
   Future<void> _loadTodoListIfAvailable() async {
     // Try the remembered todo path first, then the default sidecar path.
     final boardFilePath = widget.boardFilePath;
@@ -723,6 +784,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
           _todoItems = parsed.currentCardItems;
           _otherTodoLines = parsed.otherLines;
         });
+        _refreshBoardFace();
         widget.onTodoPathChanged(existing);
         unawaited(_persistTodoListPath(boardFilePath, existing));
         return;
@@ -800,6 +862,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       _otherTodoLines = <String>[];
       _saveTodoList();
     });
+    _refreshBoardFace();
     widget.onTodoPathChanged(path);
   }
 
@@ -865,6 +928,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       if (boardFilePath != null) {
         unawaited(_persistTodoListPath(boardFilePath, path));
       }
+      _refreshBoardFace();
     } on FileSystemException catch (error) {
       if (!mounted) {
         return;
@@ -1033,6 +1097,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         _todoItems = <TodoListEntry>[];
         _otherTodoLines = <String>[];
       });
+      _refreshBoardFace();
       widget.onTodoPathChanged(null);
       ScaffoldMessenger.of(
         context,

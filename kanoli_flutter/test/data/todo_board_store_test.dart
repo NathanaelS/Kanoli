@@ -115,6 +115,27 @@ void main() {
       store.deleteTodoList(filePath);
       expect(File(filePath).existsSync(), isFalse);
     });
+
+    test('groups searchable todo text by card id', () {
+      final cardId = '11111111-1111-1111-1111-111111111111';
+      final otherCardId = '22222222-2222-2222-2222-222222222222';
+      final text =
+          '(A) First task due:2026-04-16 card:$cardId @Doing\n'
+          'x 2026-04-13 Finished task card:$cardId @Doing\n'
+          'Other card task card:$otherCardId @Backlog\n'
+          'Untagged board-level task\n'
+          'card:$cardId @Doing\n';
+
+      final store = TodoBoardStore();
+      final grouped = store.searchableTextByCardId(text: text);
+
+      expect(grouped[cardId], <String>['First task', 'Finished task']);
+      expect(grouped[otherCardId], <String>['Other card task']);
+      expect(
+        grouped.values.expand((List<String> items) => items),
+        isNot(contains('Untagged board-level task')),
+      );
+    });
   });
 }
 

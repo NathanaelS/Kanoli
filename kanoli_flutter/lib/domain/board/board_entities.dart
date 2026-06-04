@@ -107,6 +107,14 @@ class BoardItem {
 
   String get displayTitle => title.isEmpty ? 'New item' : title;
 
+  bool get isOverdue {
+    final value = dueDate;
+    if (value == null) {
+      return false;
+    }
+    return value.isBefore(_startOfToday());
+  }
+
   String get metadataSummary {
     final parts = <String>[];
     if (priority != null && priority!.isNotEmpty) {
@@ -118,6 +126,18 @@ class BoardItem {
     }
     return parts.join(' ');
   }
+
+  int get checklistItemCount => checklists.fold(
+    0,
+    (int total, BoardChecklist checklist) => total + checklist.items.length,
+  );
+
+  int get completedChecklistItemCount => checklists.fold(
+    0,
+    (int total, BoardChecklist checklist) =>
+        total +
+        checklist.items.where((BoardChecklistItem item) => item.isDone).length,
+  );
 
   BoardItem duplicatedWithNewIds() {
     // Duplicates keep user-authored content but receive fresh IDs for the card
@@ -254,6 +274,13 @@ class TodoListEntry {
 
   String get priorityLabel => priority ?? '-';
 
+  bool get isOverdue {
+    if (isCompleted || dueDate == null) {
+      return false;
+    }
+    return dueDate!.isBefore(_startOfToday());
+  }
+
   String get todoLine {
     final parts = <String>[];
 
@@ -273,4 +300,9 @@ class TodoListEntry {
 
     return parts.join(' ');
   }
+}
+
+DateTime _startOfToday() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
 }

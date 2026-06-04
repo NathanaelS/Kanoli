@@ -12,7 +12,7 @@ _Summary: Keep Kanoli files inspectable, editable, and durable outside the app._
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Keep Markdown and companion todo.txt files as the source of truth while expanding features.
 
 ### Compatibility guardrails
@@ -37,7 +37,7 @@ _Summary: Add optional human-authored body prose between card metadata and struc
 
 ### Notes
 
-#### 2026-05-10T21:13:26-05:00
+#### 2026-05-10T19:13:26-07:00
 Implement v2.1 after AGENTS.md introduced continuity and code modularity rules.
 
 ### Markdown v2.1 rollout
@@ -59,7 +59,7 @@ _Summary: Validate the same core board lifecycle on every enabled Flutter target
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Flutter targets are enabled, but Windows, Linux, iOS, and Android smoke coverage was explicitly deferred.
 
 ### Platform smoke
@@ -79,7 +79,7 @@ Flutter targets are enabled, but Windows, Linux, iOS, and Android smoke coverage
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 High-value usability feature with low persistence risk because cards are already loaded in memory.
 
 ### Implementation sketch
@@ -95,7 +95,7 @@ High-value usability feature with low persistence risk because cards are already
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Existing card data already includes checklists and todo sidecar items, so this is mostly card tile UI.
 
 ### Display states
@@ -111,7 +111,7 @@ Existing card data already includes checklists and todo sidecar items, so this i
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Todo completion state already exists. This should include a confirmation prompt and preserve unrelated todo.txt lines.
 
 ### Safety criteria
@@ -127,7 +127,7 @@ Todo completion state already exists. This should include a confirmation prompt 
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Archive behavior already exists; this card is about exposing it as a faster command.
 
 ### Command surface
@@ -145,31 +145,14 @@ Archive behavior already exists; this card is about exposing it as a faster comm
 - [ ] Margins on the sides so things don't appear just cut off
 - [ ] Enter creating additional checklist items
 
-## Archive Dates
-> kanoli:id 0dfa027c-9cd8-6a1a-bf60-1f5a74568328
-> kanoli:labels cards
-
-### Notes
-
-#### 2026-05-10T21:42:12-05:00
-When a note is archived, it should be timestamped.
-
 ## Note fields need updated
 > kanoli:id 93685cb7-696c-adfa-d84e-1db2dcf398e5
 > kanoli:labels cards
 
 ### Notes
 
-#### 2026-05-10T21:43:24-05:00
+#### 2026-05-10T19:43:24-07:00
 Having the edit field permanently up is ugly.
-
-## View tab bar
-> kanoli:id ca825d87-ece4-b1b7-c066-8664fd3566d8
-
-### Notes
-
-#### 2026-05-10T22:18:43-05:00
-It toggles a different bar and not the tabs you would expect.
 
 # Mermaid Integration
 
@@ -180,10 +163,10 @@ It toggles a different bar and not the tabs you would expect.
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 First Mermaid step: allow users to store Mermaid source in Kanoli Markdown without rendering it yet.
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Example source: ```mermaid flowchart TD; Idea-->Build; Build-->Ship; ```
 
 ### Markdown handling
@@ -199,7 +182,7 @@ Example source: ```mermaid flowchart TD; Idea-->Build; Build-->Ship; ```
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Before rendering diagrams, Kanoli can still improve editing by recognizing Mermaid blocks and showing them as diagram source.
 
 ### Editor polish
@@ -215,7 +198,7 @@ Before rendering diagrams, Kanoli can still improve editing by recognizing Merma
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Mermaid rendering likely needs a WebView/JS or export pipeline decision. Keep this as a prototype until storage and security rules are clear.
 
 ### Prototype questions
@@ -232,7 +215,7 @@ Mermaid rendering likely needs a WebView/JS or export pipeline decision. Keep th
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Longer-term Mermaid feature: generate flowcharts from columns, cards, labels, due-date risk, or project workflow structure.
 
 ### Generation ideas
@@ -250,7 +233,7 @@ Longer-term Mermaid feature: generate flowcharts from columns, cards, labels, du
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Large feature because it needs file reference policy, missing-file recovery, Markdown conventions, and preview UI.
 
 ### Design decisions
@@ -267,7 +250,7 @@ Large feature because it needs file reference policy, missing-file recovery, Mar
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Security-sensitive roadmap item. Needs a threat model, recovery story, key handling, and cross-platform behavior.
 
 ### Security planning
@@ -284,7 +267,7 @@ Security-sensitive roadmap item. Needs a threat model, recovery story, key handl
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Beyond smoke testing, each platform needs packaging, signing, permissions, and install/update QA.
 
 ### Release channels
@@ -302,7 +285,7 @@ Beyond smoke testing, each platform needs packaging, signing, permissions, and i
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Powerful but architecture-shaping. This should wait until the local-first safety model is more mature.
 
 ### Architecture questions
@@ -325,10 +308,10 @@ _Summary: Finish the unsigned public beta release path for Kanoli 0.6.0 Beta._
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 Target release is Kanoli 0.6.0 Beta as an unsigned public beta DMG. The signed/notarized Apple Developer ID path is documented as a future upgrade, not a blocker for this beta.
 
-#### 2026-05-10T15:40:00-05:00
+#### 2026-05-10T13:40:00-07:00
 Built and verified Kanoli-0.6.0-beta.dmg. The macOS bundle reports version 0.6.0 build 1; the beta label is carried by the release name, tag, and DMG filename.
 
 ### Release checklist
@@ -350,7 +333,7 @@ _Summary: Replace compact machine-oriented saves with a readable Markdown board 
 
 ### Notes
 
-#### 2026-05-10T16:10:00-05:00
+#### 2026-05-10T14:10:00-07:00
 Implement readable Kanoli Markdown v2 as the default save format while keeping legacy compact Markdown readable.
 
 ### Markdown v2 rollout
@@ -372,7 +355,7 @@ _Summary: Bring the planning documents into alignment with the completed Phase 3
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 PHASE3_SIGNOFF says Phase 3 is complete, but the production hardening plan/checklist still contain older in-progress language and unchecked exit rows.
 
 ### Doc cleanup
@@ -393,7 +376,7 @@ _Summary: KanoliDart is the current release baseline, with macOS hardening compl
 
 ### Notes
 
-#### 2026-05-10T14:00:00-05:00
+#### 2026-05-10T12:00:00-07:00
 KanoliDart is the active Flutter rebuild. Core feature parity is complete, Phase 2 macOS smoke passed, and Phase 3 macOS hardening is signed off.
 
 ### Baseline evidence
@@ -402,3 +385,31 @@ KanoliDart is the active Flutter rebuild. Core feature parity is complete, Phase
 - [x] flutter test passes
 - [x] Both KanoliDart and KanoliSwift git statuses are clean
 - [x] Reconcile stale docs that still say Phase 3 is in progress
+
+## Archive Dates
+> kanoli:id 0dfa027c-9cd8-6a1a-bf60-1f5a74568328
+> kanoli:labels cards
+
+### Notes
+
+#### 2026-05-24T16:41:56-07:00
+Moved to Archive
+
+#### 2026-05-10T19:42:12-07:00
+When a note is archived, it should be timestamped.
+
+## View tab bar
+> kanoli:id ca825d87-ece4-b1b7-c066-8664fd3566d8
+
+### Notes
+
+#### 2026-05-24T16:42:42-07:00
+Moved to Archive
+
+#### 2026-05-10T20:18:43-07:00
+It toggles a different bar and not the tabs you would expect.
+
+## Checking archival timestamps
+> kanoli:id 2ce6888a-655c-f20a-09d4-20d5c8c005d9
+
+Archived at 2026-05-24T16:54:47-07:00
