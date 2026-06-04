@@ -19,6 +19,9 @@
 
 ## [PROGRESS]
 
+- 2026-06-04T09:13:00-07:00 [CODE] Removed the non-macOS `2s` timeouts from `board_file_access_service.dart` so user-driven open/save dialogs can complete normally; the earlier absolute-path guard remains in place to block working-directory fallbacks.
+- 2026-06-04T09:01:00-07:00 [CODE] Hardened non-macOS board open/create/import path handling in `board_workspace_page.dart` so relative paths are rejected with a visible error instead of silently resolving against the app working directory.
+- 2026-06-04T08:27:00-07:00 [CODE] Debounced typing-driven card editor saves in `item_editor_sheet.dart` to avoid full-board persistence on every keystroke; explicit non-typing edits still save immediately so Markdown/local-first behavior stays unchanged.
 - 2026-06-04T05:02:23-07:00 [CODE] Centralized the fast card search shortcut in `board_workspace_page.dart` as a shared `Meta+P` activator, covering Command+P on macOS and Windows-key+P on Windows, and added a workspace widget regression test that sends `metaLeft + P`.
 - 2026-06-01T00:13:51Z [CODE] Added fast-search scope selection for current board vs all open boards; all-open-board results carry board/tab context and selection switches to the source tab before opening the existing card editor.
 - 2026-05-31T23:32:58Z [CODE] Enhanced fast card search palette guidance with inline example criteria and extended matching to support `+label` and `due:YYYY-MM-DD`/date queries.
@@ -54,6 +57,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-06-04T09:13:00-07:00 [CODE] The Windows `Create File` regression was caused by `openFile`/`getSaveLocation` calls in `board_file_access_service.dart` being wrapped in a `2s` timeout, which made normal human picker interaction fall back to the manual relative-path prompt.
 - 2026-06-04T05:18:20-07:00 [TOOL] Supersedes the 2026-06-04T05:02:23-07:00 verification note: sandboxed Dart/Flutter commands timed out, but escalated `dart format` completed with no changes, escalated `flutter analyze` passed, and the focused `flutter test test/features/board/board_workspace_page_test.dart` passed.
 - 2026-06-04T05:18:20-07:00 [TOOL] Full escalated `flutter test` passed the new Windows-key shortcut test but failed existing `test/data/safe_file_store_test.dart` because expected backup count 2 was actual 0; provenance for that failure is UNCONFIRMED.
 - 2026-05-31T23:26:07Z [TOOL] Full-project `flutter analyze` now completes successfully on `feature/5-add-fast-card-search`; previous analyzer-hang discovery is superseded for this branch state.
@@ -81,6 +85,9 @@
 
 ## [OUTCOMES]
 
+- 2026-06-04T09:13:00-07:00 [TOOL] Windows picker-flow validation passed: `dart format lib/core/files/board_file_access_service.dart`, `flutter analyze lib/core/files/board_file_access_service.dart lib/features/board/presentation/board_workspace_page.dart`, and `flutter test test/features/board/board_workspace_page_test.dart`.
+- 2026-06-04T09:01:00-07:00 [TOOL] Path-handling validation passed: `dart format lib/features/board/presentation/board_workspace_page.dart`, `flutter analyze lib/features/board/presentation/board_workspace_page.dart`, and `flutter test test/features/board/board_workspace_page_test.dart`.
+- 2026-06-04T08:27:00-07:00 [TOOL] Debounced editor-save validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart`, `flutter analyze lib/features/board/presentation/item_editor_sheet.dart`, and `flutter test test/features/board/board_workspace_page_test.dart`.
 - 2026-06-01T00:13:51Z [TOOL] Fast-search scope validation passed: `flutter analyze`, focused search/palette/controller tests, and full `flutter test` completed successfully.
 - 2026-05-31T23:32:58Z [TOOL] Search guidance/date-label enhancement validation passed: `flutter analyze`, focused search/palette tests, and full `flutter test` completed successfully.
 - 2026-05-31T23:26:07Z [TOOL] Cmd+P invocation fix validation passed: `flutter analyze`, focused fast-search tests, and full `flutter test` all completed successfully.

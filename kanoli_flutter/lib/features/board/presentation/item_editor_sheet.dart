@@ -40,6 +40,7 @@ class ItemEditorSheet extends StatefulWidget {
 
 class _ItemEditorSheetState extends State<ItemEditorSheet> {
   final TodoBoardStore _todoStore = TodoBoardStore();
+  static const Duration _draftSaveDebounce = Duration(milliseconds: 300);
   static const MethodChannel _nativeDialogsChannel = MethodChannel(
     'kanoli/native_dialogs',
   );
@@ -58,6 +59,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   List<String> _otherTodoLines = <String>[];
   final TextEditingController _todoAddController = TextEditingController();
   final TextEditingController _labelsController = TextEditingController();
+  Timer? _pendingDraftSave;
 
   String get _priorityFormValue {
     final raw = _draft.priority?.trim().toUpperCase() ?? '';
@@ -106,6 +108,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
 
   @override
   void dispose() {
+    _flushPendingDraftSave();
     _todoAddController.dispose();
     _labelsController.dispose();
     super.dispose();
@@ -184,7 +187,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       decoration: const InputDecoration(labelText: 'Title'),
       onChanged: (String value) {
         _draft.title = value;
-        _saveDraft();
+        _scheduleDraftSave();
       },
     );
   }
@@ -383,7 +386,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                         decoration: const InputDecoration(hintText: 'Note'),
                         onChanged: (String value) {
                           note.text = value;
-                          _saveDraft();
+                          _scheduleDraftSave();
                           setState(() {});
                         },
                       ),
@@ -450,7 +453,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                           ),
                           onChanged: (String value) {
                             checklist.title = value;
-                            _saveDraft();
+                            _scheduleDraftSave();
                           },
                         ),
                       ),
@@ -485,7 +488,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                             ),
                             onChanged: (String value) {
                               item.text = value;
-                              _saveDraft();
+                              _scheduleDraftSave();
                             },
                           ),
                         ),
@@ -717,7 +720,24 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         .join('-');
   }
 
+  void _scheduleDraftSave() {
+    _pendingDraftSave?.cancel();
+    _pendingDraftSave = Timer(_draftSaveDebounce, _saveDraft);
+  }
+
+  void _flushPendingDraftSave() {
+    if (_pendingDraftSave == null) {
+      return;
+    }
+    _pendingDraftSave!.cancel();
+    _pendingDraftSave = null;
+    _saveDraft();
+  }
+
   void _saveDraft() {
+    _pendingDraftSave?.cancel();
+    _pendingDraftSave = null;
+
     // Drop empty notes/checklist items before sending the draft back to the
     // board.
     _draft.notes = _notes

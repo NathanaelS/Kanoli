@@ -70,6 +70,12 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   @override
   void initState() {
     super.initState();
+    if (Platform.isWindows) {
+      _nativeDialogsChannel.setMethodCallHandler(_handleWindowsMenuAction);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_syncWindowsMenuState());
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_shortcutFocusNode.hasFocus) {
         _shortcutFocusNode.requestFocus();
@@ -79,6 +85,9 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   @override
   void dispose() {
+    if (Platform.isWindows) {
+      _nativeDialogsChannel.setMethodCallHandler(null);
+    }
     _shortcutFocusNode.dispose();
     _newColumnTitleController.dispose();
     _newItemTitleController.dispose();
@@ -1520,7 +1529,17 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         await _openBoardViaPathPrompt();
         return;
       }
-      await widget.controller.openBoard(path);
+      final normalizedPath = _validatedAbsolutePath(
+        path,
+        failureEvent: 'openBoardRelativePathRejected',
+        snackBarMessage:
+            'Open Board requires a full file path. Relative paths are not allowed.',
+      );
+      if (normalizedPath == null) {
+        await _openBoardViaPathPrompt();
+        return;
+      }
+      await widget.controller.openBoard(normalizedPath);
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'openBoardUiFailure',
@@ -1532,6 +1551,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   }
 
   Future<void> _hideWindowViaNative() async {
+    if (Platform.isWindows) {
+      await SystemNavigator.pop();
+      return;
+    }
     if (!Platform.isMacOS) {
       return;
     }
@@ -1562,6 +1585,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     widget.controller.toggleBoardTabBarVisibility();
+    await _syncWindowsMenuState();
 
     if (!shouldShow) {
       return;
@@ -1621,7 +1645,20 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         return;
       }
 
-      await widget.controller.createBoard(_normalizeMarkdownPath(savePath));
+      final normalizedPath = _validatedAbsolutePath(
+        savePath,
+        failureEvent: 'createBoardRelativePathRejected',
+        snackBarMessage:
+            'Create Board requires a full save path. Relative paths are not allowed.',
+      );
+      if (normalizedPath == null) {
+        await _createBoardViaPathPrompt('KanoliBoard.md');
+        return;
+      }
+
+      await widget.controller.createBoard(
+        _normalizeMarkdownPath(normalizedPath),
+      );
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
         'createBoardUiFailure',
@@ -1718,12 +1755,28 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         await _importBoardViaPathPrompt();
         return;
       }
-      if (File(selection.boardPath).existsSync()) {
+      final normalizedJsonPath = _validatedAbsolutePath(
+        selection.jsonPath,
+        failureEvent: 'importBoardJsonRelativePathRejected',
+        snackBarMessage:
+            'Import Trello JSON requires a full source file path. Relative paths are not allowed.',
+      );
+      final normalizedBoardPath = _validatedAbsolutePath(
+        selection.boardPath,
+        failureEvent: 'importBoardSaveRelativePathRejected',
+        snackBarMessage:
+            'Save Imported Board requires a full destination path. Relative paths are not allowed.',
+      );
+      if (normalizedJsonPath == null || normalizedBoardPath == null) {
+        await _importBoardViaPathPrompt();
+        return;
+      }
+      if (File(normalizedBoardPath).existsSync()) {
         final shouldContinue = await _confirmActionWithOptionalPersistence(
           prefKey: _confirmImportOverwritePrefKey,
           title: 'Overwrite Existing Board?',
           message:
-              'A file already exists at:\n${selection.boardPath}\n\n'
+              'A file already exists at:\n$normalizedBoardPath\n\n'
               'Import will overwrite its contents.',
           confirmLabel: 'Overwrite',
         );
@@ -1732,8 +1785,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         }
       }
       await widget.controller.importJsonBoard(
-        jsonPath: selection.jsonPath,
-        boardPath: _normalizeMarkdownPath(selection.boardPath),
+        jsonPath: normalizedJsonPath,
+        boardPath: _normalizeMarkdownPath(normalizedBoardPath),
       );
     } on Object catch (error, stackTrace) {
       widget.controller.logger.error(
@@ -2266,7 +2319,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
 
   Future<void> _revealActiveBoardInFinder() async {
     final boardPath = widget.controller.activeBoardPath;
-    if (boardPath == null || !Platform.isMacOS) {
+    if (boardPath == null || !(Platform.isMacOS || Platform.isWindows)) {
       return;
     }
 
@@ -2336,6 +2389,114 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     );
   }
 
+  Future<void> _syncWindowsMenuState() async {
+    if (!Platform.isWindows) {
+      return;
+    }
+
+    try {
+      await _nativeDialogsChannel.invokeMethod<void>(
+        'setWindowsMenuState',
+        <String, Object?>{'showBoardTabBar': widget.controller.showBoardTabBar},
+      );
+    } on PlatformException catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'kanoli',
+          context: ErrorDescription('while syncing Windows menu state'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleWindowsMenuAction(MethodCall call) async {
+    if (!Platform.isWindows || call.method != 'menuAction') {
+      throw MissingPluginException();
+    }
+
+    final action = call.arguments;
+    if (action is! String) {
+      throw ArgumentError.value(
+        action,
+        'arguments',
+        'Expected a string action',
+      );
+    }
+
+    switch (action) {
+      case 'createBoard':
+        await _createBoard();
+        return;
+      case 'openBoard':
+        await _openBoard();
+        return;
+      case 'importBoard':
+        await _importBoard();
+        return;
+      case 'closeActiveBoard':
+        await _closeSelectedTab();
+        return;
+      case 'closeWindow':
+        await _hideWindowViaNative();
+        return;
+      case 'toggleBoardTabBar':
+        await _toggleBoardTabBarVisibility();
+        return;
+      case 'openPrivacySettings':
+        await _openPrivacySettings();
+        return;
+      case 'openDiagnostics':
+        await _openDiagnosticsPanel();
+        return;
+      case 'revealActiveBoard':
+        await _revealActiveBoardInFinder();
+        return;
+      case 'copyActiveBoardPath':
+        await _copyActiveBoardPath();
+        return;
+      case 'searchCards':
+        await _openCardSearchPalette();
+        return;
+      case 'undo':
+        Actions.invoke(
+          context,
+          const UndoTextIntent(SelectionChangedCause.keyboard),
+        );
+        return;
+      case 'redo':
+        Actions.invoke(
+          context,
+          const RedoTextIntent(SelectionChangedCause.keyboard),
+        );
+        return;
+      case 'cut':
+        Actions.invoke(
+          context,
+          const CopySelectionTextIntent.cut(SelectionChangedCause.keyboard),
+        );
+        return;
+      case 'copy':
+        Actions.invoke(context, CopySelectionTextIntent.copy);
+        return;
+      case 'paste':
+        Actions.invoke(
+          context,
+          const PasteTextIntent(SelectionChangedCause.keyboard),
+        );
+        return;
+      case 'selectAll':
+        Actions.invoke(
+          context,
+          const SelectAllTextIntent(SelectionChangedCause.keyboard),
+        );
+        return;
+      default:
+        throw UnsupportedError('Unknown Windows menu action: $action');
+    }
+  }
+
   String _normalizeTag(String value) {
     return value
         .trim()
@@ -2366,6 +2527,44 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     return '$path.md';
   }
 
+  String? _validatedAbsolutePath(
+    String rawPath, {
+    required String failureEvent,
+    required String snackBarMessage,
+  }) {
+    final trimmedPath = rawPath.trim();
+    if (trimmedPath.isEmpty) {
+      return null;
+    }
+
+    if (!_isAbsolutePath(trimmedPath)) {
+      widget.controller.logger.warning(failureEvent, <String, Object?>{
+        'path': trimmedPath,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(snackBarMessage)));
+      }
+      return null;
+    }
+
+    return File(trimmedPath).absolute.path;
+  }
+
+  bool _isAbsolutePath(String path) {
+    if (path.isEmpty) {
+      return false;
+    }
+
+    if (Platform.isWindows) {
+      return path.startsWith(r'\\') ||
+          RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(path);
+    }
+
+    return path.startsWith('/');
+  }
+
   bool _isJsonPath(String path) {
     return path.toLowerCase().endsWith('.json');
   }
@@ -2381,7 +2580,16 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     if (selectedPath == null || selectedPath.trim().isEmpty) {
       return;
     }
-    await widget.controller.openBoard(selectedPath.trim());
+    final normalizedPath = _validatedAbsolutePath(
+      selectedPath,
+      failureEvent: 'openBoardPromptRelativePathRejected',
+      snackBarMessage:
+          'Open Board requires a full file path. Relative paths are not allowed.',
+    );
+    if (normalizedPath == null) {
+      return;
+    }
+    await widget.controller.openBoard(normalizedPath);
   }
 
   Future<void> _createBoardViaPathPrompt(String suggestedName) async {
@@ -2395,7 +2603,16 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     if (createPath == null || createPath.trim().isEmpty) {
       return;
     }
-    await widget.controller.createBoard(createPath.trim());
+    final normalizedPath = _validatedAbsolutePath(
+      createPath,
+      failureEvent: 'createBoardPromptRelativePathRejected',
+      snackBarMessage:
+          'Create Board requires a full save path. Relative paths are not allowed.',
+    );
+    if (normalizedPath == null) {
+      return;
+    }
+    await widget.controller.createBoard(_normalizeMarkdownPath(normalizedPath));
   }
 
   Future<void> _importBoardViaPathPrompt() async {
@@ -2407,6 +2624,15 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       submitLabel: 'Next',
     );
     if (jsonPath == null || jsonPath.trim().isEmpty) {
+      return;
+    }
+    final normalizedJsonPath = _validatedAbsolutePath(
+      jsonPath,
+      failureEvent: 'importBoardJsonPromptRelativePathRejected',
+      snackBarMessage:
+          'Import Trello JSON requires a full source file path. Relative paths are not allowed.',
+    );
+    if (normalizedJsonPath == null) {
       return;
     }
 
@@ -2424,12 +2650,21 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     if (boardPath == null || boardPath.trim().isEmpty) {
       return;
     }
-    if (File(boardPath.trim()).existsSync()) {
+    final normalizedBoardPath = _validatedAbsolutePath(
+      boardPath,
+      failureEvent: 'importBoardSavePromptRelativePathRejected',
+      snackBarMessage:
+          'Save Imported Board requires a full destination path. Relative paths are not allowed.',
+    );
+    if (normalizedBoardPath == null) {
+      return;
+    }
+    if (File(normalizedBoardPath).existsSync()) {
       final shouldContinue = await _confirmActionWithOptionalPersistence(
         prefKey: _confirmImportOverwritePrefKey,
         title: 'Overwrite Existing Board?',
         message:
-            'A file already exists at:\n${boardPath.trim()}\n\n'
+            'A file already exists at:\n$normalizedBoardPath\n\n'
             'Import will overwrite its contents.',
         confirmLabel: 'Overwrite',
       );
@@ -2439,8 +2674,8 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     }
 
     await widget.controller.importJsonBoard(
-      jsonPath: jsonPath.trim(),
-      boardPath: boardPath.trim(),
+      jsonPath: normalizedJsonPath,
+      boardPath: normalizedBoardPath,
     );
   }
 

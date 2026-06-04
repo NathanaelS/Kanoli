@@ -35,7 +35,7 @@ class DefaultBoardFileAccessService implements BoardFileAccessService {
       acceptedTypeGroups: const <XTypeGroup>[
         XTypeGroup(label: 'Board Files', extensions: <String>['md', 'txt']),
       ],
-    ).timeout(const Duration(seconds: 2), onTimeout: () => null);
+    );
     return file?.path;
   }
 
@@ -45,9 +45,7 @@ class DefaultBoardFileAccessService implements BoardFileAccessService {
       return _pickSaveViaNativeDialog(suggestedName: suggestedName);
     }
 
-    final saveLocation = await getSaveLocation(
-      suggestedName: suggestedName,
-    ).timeout(const Duration(seconds: 2), onTimeout: () => null);
+    final saveLocation = await getSaveLocation(suggestedName: suggestedName);
     return saveLocation?.path;
   }
 
@@ -79,14 +77,14 @@ class DefaultBoardFileAccessService implements BoardFileAccessService {
           uniformTypeIdentifiers: <String>['public.json'],
         ),
       ],
-    ).timeout(const Duration(seconds: 2), onTimeout: () => null);
+    );
     if (jsonFile == null) {
       return null;
     }
 
     final saveLocation = await getSaveLocation(
       suggestedName: suggestedBoardName,
-    ).timeout(const Duration(seconds: 2), onTimeout: () => null);
+    );
     if (saveLocation == null || saveLocation.path.trim().isEmpty) {
       return null;
     }

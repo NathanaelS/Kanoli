@@ -57,6 +57,48 @@ IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Menu
+//
+
+IDR_MAIN_MENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "Create Board",             IDM_FILE_CREATE_BOARD
+        MENUITEM "Open Board",               IDM_FILE_OPEN_BOARD
+        MENUITEM "Import Trello JSON",       IDM_FILE_IMPORT_TRELLO_JSON
+        MENUITEM SEPARATOR
+        MENUITEM "Close Active Board",       IDM_FILE_CLOSE_ACTIVE_BOARD
+        MENUITEM "Close Window",             IDM_FILE_CLOSE_WINDOW
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "Show Tab Bar",             IDM_VIEW_TOGGLE_TAB_BAR
+    END
+    POPUP "&Tools"
+    BEGIN
+        MENUITEM "Privacy Settings",         IDM_TOOLS_PRIVACY_SETTINGS
+        MENUITEM "Diagnostics",              IDM_TOOLS_DIAGNOSTICS
+        MENUITEM "Reveal Active Board in Finder", IDM_TOOLS_REVEAL_ACTIVE_BOARD
+        MENUITEM "Copy Active Board Path",   IDM_TOOLS_COPY_ACTIVE_BOARD
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "Search Cards",             IDM_EDIT_SEARCH_CARDS
+        MENUITEM SEPARATOR
+        MENUITEM "Undo",                     IDM_EDIT_UNDO
+        MENUITEM "Redo",                     IDM_EDIT_REDO
+        MENUITEM SEPARATOR
+        MENUITEM "Cut",                      IDM_EDIT_CUT
+        MENUITEM "Copy",                     IDM_EDIT_COPY
+        MENUITEM "Paste",                    IDM_EDIT_PASTE
+        MENUITEM "Select All",               IDM_EDIT_SELECT_ALL
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Version
 //
 
