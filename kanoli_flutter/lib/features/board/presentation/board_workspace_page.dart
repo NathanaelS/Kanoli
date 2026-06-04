@@ -38,6 +38,14 @@ class BoardWorkspacePage extends StatefulWidget {
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final AuraIntensity _auraIntensity = AuraIntensity.subtle;
   final TodoBoardStore _todoBoardStore = TodoBoardStore();
+  final FocusNode _shortcutFocusNode = FocusNode(
+    debugLabel: 'WorkspaceShortcuts',
+  );
+  // Flutter maps meta to Command on macOS and the Windows key on Windows.
+  static const SingleActivator _cardSearchShortcut = SingleActivator(
+    LogicalKeyboardKey.keyP,
+    meta: true,
+  );
   static const MethodChannel _nativeDialogsChannel = MethodChannel(
     'kanoli/native_dialogs',
   );
@@ -60,7 +68,18 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       'kanoli.confirm.importOverwrite.v2';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_shortcutFocusNode.hasFocus) {
+        _shortcutFocusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _shortcutFocusNode.dispose();
     _newColumnTitleController.dispose();
     _newItemTitleController.dispose();
     _newColumnTitleFocusNode.dispose();
@@ -192,11 +211,12 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           ),
         );
         final shortcutScaffold = Focus(
+          focusNode: _shortcutFocusNode,
           autofocus: true,
+          onKeyEvent: _handleWorkspaceShortcut,
           child: CallbackShortcuts(
             bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.keyP, meta: true): () =>
-                  unawaited(_openCardSearchPalette()),
+              _cardSearchShortcut: () => unawaited(_openCardSearchPalette()),
             },
             child: scaffold,
           ),
@@ -336,10 +356,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   members: <PlatformMenuItem>[
                     PlatformMenuItem(
                       label: 'Search Cards',
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyP,
-                        meta: true,
-                      ),
+                      shortcut: _cardSearchShortcut,
                       onSelected: () => unawaited(_openCardSearchPalette()),
                     ),
                     PlatformMenuItem(
@@ -1052,6 +1069,16 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
         ),
       ],
     );
+  }
+
+  KeyEventResult _handleWorkspaceShortcut(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyP &&
+        HardwareKeyboard.instance.isMetaPressed) {
+      unawaited(_openCardSearchPalette());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   Map<String, TodoBoardItemCounts> _todoCountsByCardId() {

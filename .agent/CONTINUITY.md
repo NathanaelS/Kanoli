@@ -19,6 +19,7 @@
 
 ## [PROGRESS]
 
+- 2026-06-04T05:02:23-07:00 [CODE] Centralized the fast card search shortcut in `board_workspace_page.dart` as a shared `Meta+P` activator, covering Command+P on macOS and Windows-key+P on Windows, and added a workspace widget regression test that sends `metaLeft + P`.
 - 2026-06-01T00:13:51Z [CODE] Added fast-search scope selection for current board vs all open boards; all-open-board results carry board/tab context and selection switches to the source tab before opening the existing card editor.
 - 2026-05-31T23:32:58Z [CODE] Enhanced fast card search palette guidance with inline example criteria and extended matching to support `+label` and `due:YYYY-MM-DD`/date queries.
 - 2026-05-31T23:26:07Z [CODE] Fixed Cmd+P fast card search invocation on macOS by adding a native Flutter `PlatformMenuItem` shortcut (`Edit > Search Cards`) and guarding against duplicate palette dialogs.
@@ -53,6 +54,8 @@
 
 ## [DISCOVERIES]
 
+- 2026-06-04T05:18:20-07:00 [TOOL] Supersedes the 2026-06-04T05:02:23-07:00 verification note: sandboxed Dart/Flutter commands timed out, but escalated `dart format` completed with no changes, escalated `flutter analyze` passed, and the focused `flutter test test/features/board/board_workspace_page_test.dart` passed.
+- 2026-06-04T05:18:20-07:00 [TOOL] Full escalated `flutter test` passed the new Windows-key shortcut test but failed existing `test/data/safe_file_store_test.dart` because expected backup count 2 was actual 0; provenance for that failure is UNCONFIRMED.
 - 2026-05-31T23:26:07Z [TOOL] Full-project `flutter analyze` now completes successfully on `feature/5-add-fast-card-search`; previous analyzer-hang discovery is superseded for this branch state.
 - 2026-05-26T21:31:40Z [TOOL] Full-project `flutter analyze` still hangs at `Analyzing kanoli_flutter...` and exits with `analysis server exited with code -2` when interrupted, but targeted analysis of the four edited overdue-notification files completed successfully with no issues.
 - 2026-05-26T09:26:00Z [TOOL] Full-project `flutter analyze` again stalled at `Analyzing kanoli_flutter...`; targeted analysis for `board_workspace_page.dart`, `todo_board_store.dart`, and `board_entities.dart` completed successfully with no issues.
