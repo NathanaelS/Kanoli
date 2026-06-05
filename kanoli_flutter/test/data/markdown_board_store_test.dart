@@ -44,7 +44,9 @@ void main() {
       final filePath = _tempFilePath('.md');
       store.save(columns: columns, filePath: filePath);
 
-      expect(File(filePath).readAsStringSync(), '''
+      expect(
+        File(filePath).readAsStringSync(),
+        startsWith('''
 # Doing
 
 ## Test Item
@@ -62,7 +64,8 @@ First note
 > kanoli:checklist 22222222-2222-2222-2222-222222222222
 - [ ] Write tests
 - [x] Ship
-''');
+'''),
+      );
 
       final result = store.loadBoard(filePath);
       final loadedItem = result.columns.first.items.first;

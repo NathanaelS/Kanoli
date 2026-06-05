@@ -1,10 +1,22 @@
 // Parses legacy compact Markdown, readable v2 Markdown, and v2.1 card bodies
 // into board columns.
 import '../../domain/board/board_entities.dart';
+import 'markdown_board_document.dart';
+import 'markdown_board_managed_sections.dart';
 import 'markdown_board_parser_helpers.dart';
 
 class MarkdownBoardParser {
-  List<BoardColumn> parse(String markdown) {
+  List<BoardColumn> parse(String markdown) => _parseColumns(markdown);
+
+  MarkdownBoardDocument parseDocument(String markdown) {
+    final sections = MarkdownBoardManagedSections().extract(markdown);
+    return MarkdownBoardDocument(
+      columns: _parseColumns(sections.boardMarkdown),
+      managedTimelineMermaid: sections.timelineMermaid,
+    );
+  }
+
+  List<BoardColumn> _parseColumns(String markdown) {
     // Parser state tracks the current card plus the active readable section.
     // Unsectioned card text becomes bodyMarkdown.
     final parsedColumns = <BoardColumn>[];
