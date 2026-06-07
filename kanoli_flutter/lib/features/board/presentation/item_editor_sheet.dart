@@ -67,6 +67,21 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     return '';
   }
 
+  bool get _hasInvalidDateRange {
+    final startDate = _draft.startDate;
+    final dueDate = _draft.dueDate;
+    if (startDate == null || dueDate == null) {
+      return false;
+    }
+    final normalizedStart = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+    );
+    final normalizedDue = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return normalizedStart.isAfter(normalizedDue);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +92,7 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       title: widget.item.title,
       notes: List<BoardNote>.from(widget.item.notes),
       checklists: List<BoardChecklist>.from(widget.item.checklists),
+      startDate: widget.item.startDate,
       dueDate: widget.item.dueDate,
       priority: widget.item.priority,
       labels: List<String>.from(widget.item.labels),
@@ -190,7 +206,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   }
 
   Widget _metadataEditor() {
-    // Metadata maps directly to Markdown card metadata: priority and due date.
+    // Metadata maps directly to Markdown card metadata: priority, start date,
+    // and due date.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -220,52 +237,73 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                 },
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Checkbox(
-                  value: _draft.dueDate != null,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      if (value == true) {
-                        _draft.dueDate ??= DateTime.now();
-                      } else {
-                        _draft.dueDate = null;
-                      }
-                      _saveDraft();
-                    });
-                  },
-                ),
-                const Text('Has due date'),
-                if (_draft.dueDate != null)
-                  TextButton(
-                    onPressed: () async {
-                      final selected = await showDatePicker(
-                        context: context,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                        initialDate: _draft.dueDate ?? DateTime.now(),
-                      );
-
-                      if (selected == null) {
-                        return;
-                      }
-
-                      setState(() {
-                        _draft.dueDate = DateTime(
-                          selected.year,
-                          selected.month,
-                          selected.day,
-                        );
-                        _saveDraft();
-                      });
-                    },
-                    child: Text(TodoDateFormatter.format(_draft.dueDate!)),
-                  ),
-              ],
+            _dateToggle(
+              label: 'Has start date',
+              value: _draft.startDate,
+              onToggle: (bool enabled) {
+                setState(() {
+                  _draft.startDate = enabled
+                      ? (_draft.dueDate ?? DateTime.now())
+                      : null;
+                  _saveDraft();
+                });
+              },
+              onPick: () => _pickDate(
+                initialDate:
+                    _draft.startDate ?? _draft.dueDate ?? DateTime.now(),
+                onSelected: (DateTime selected) {
+                  final dueDate = _draft.dueDate;
+                  if (dueDate != null && _isAfter(selected, dueDate)) {
+                    _showDateRangeError(
+                      message: 'Start date cannot be later than due date.',
+                    );
+                    return;
+                  }
+                  setState(() {
+                    _draft.startDate = selected;
+                    _saveDraft();
+                  });
+                },
+              ),
+            ),
+            _dateToggle(
+              label: 'Has due date',
+              value: _draft.dueDate,
+              onToggle: (bool enabled) {
+                setState(() {
+                  _draft.dueDate = enabled
+                      ? (_draft.startDate ?? DateTime.now())
+                      : null;
+                  _saveDraft();
+                });
+              },
+              onPick: () => _pickDate(
+                initialDate:
+                    _draft.dueDate ?? _draft.startDate ?? DateTime.now(),
+                onSelected: (DateTime selected) {
+                  final startDate = _draft.startDate;
+                  if (startDate != null && _isAfter(startDate, selected)) {
+                    _showDateRangeError(
+                      message: 'Due date cannot be earlier than start date.',
+                    );
+                    return;
+                  }
+                  setState(() {
+                    _draft.dueDate = selected;
+                    _saveDraft();
+                  });
+                },
+              ),
             ),
           ],
         ),
+        if (_hasInvalidDateRange) ...<Widget>[
+          const SizedBox(height: 10),
+          _overdueNotice(
+            icon: Icons.error_outline,
+            message: 'Start date cannot be later than due date.',
+          ),
+        ],
         if (_draft.isOverdue) ...<Widget>[
           const SizedBox(height: 10),
           _overdueNotice(
@@ -275,6 +313,59 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         ],
       ],
     );
+  }
+
+  Widget _dateToggle({
+    required String label,
+    required DateTime? value,
+    required ValueChanged<bool> onToggle,
+    required VoidCallback onPick,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Checkbox(
+          value: value != null,
+          onChanged: (bool? enabled) => onToggle(enabled == true),
+        ),
+        Text(label),
+        if (value != null)
+          TextButton(
+            onPressed: onPick,
+            child: Text(TodoDateFormatter.format(value)),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _pickDate({
+    required DateTime initialDate,
+    required ValueChanged<DateTime> onSelected,
+  }) async {
+    final selected = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDate: initialDate,
+    );
+
+    if (selected == null) {
+      return;
+    }
+
+    onSelected(DateTime(selected.year, selected.month, selected.day));
+  }
+
+  void _showDateRangeError({required String message}) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  bool _isAfter(DateTime left, DateTime right) {
+    final normalizedLeft = DateTime(left.year, left.month, left.day);
+    final normalizedRight = DateTime(right.year, right.month, right.day);
+    return normalizedLeft.isAfter(normalizedRight);
   }
 
   Widget _overdueNotice({required IconData icon, required String message}) {

@@ -87,6 +87,7 @@ class BoardItem {
     List<BoardNote>? notes,
     List<BoardChecklist>? checklists,
     this.bodyMarkdown = '',
+    this.startDate,
     this.dueDate,
     this.priority,
     List<String>? labels,
@@ -101,6 +102,7 @@ class BoardItem {
   String bodyMarkdown;
   List<BoardNote> notes;
   List<BoardChecklist> checklists;
+  DateTime? startDate;
   DateTime? dueDate;
   String? priority;
   List<String> labels;
@@ -166,6 +168,7 @@ class BoardItem {
             ),
           )
           .toList(),
+      startDate: startDate,
       dueDate: dueDate,
       priority: priority,
       labels: List<String>.from(labels),

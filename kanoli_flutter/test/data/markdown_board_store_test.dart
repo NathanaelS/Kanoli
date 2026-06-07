@@ -9,6 +9,7 @@ void main() {
   group('MarkdownBoardStore', () {
     test('round-trips columns, item metadata, notes, and checklists', () {
       final store = MarkdownBoardStore();
+      final startDate = TodoDateFormatter.tryParse('2026-04-12')!;
       final dueDate = TodoDateFormatter.tryParse('2026-04-16')!;
       final noteDate = DateTime.parse('2026-04-13T12:30:00-07:00');
       final formattedNoteDate = NoteDateFormatter.format(noteDate);
@@ -33,6 +34,7 @@ void main() {
                   ],
                 ),
               ],
+              startDate: startDate,
               dueDate: dueDate,
               priority: 'A',
               labels: <String>['AI', 'more-testing'],
@@ -43,9 +45,10 @@ void main() {
 
       final filePath = _tempFilePath('.md');
       store.save(columns: columns, filePath: filePath);
+      final savedMarkdown = File(filePath).readAsStringSync();
 
       expect(
-        File(filePath).readAsStringSync(),
+        savedMarkdown,
         startsWith('''
 # Doing
 
@@ -53,6 +56,7 @@ void main() {
 > kanoli:id 11111111-1111-1111-1111-111111111111
 > kanoli:priority A
 > kanoli:labels AI, more-testing
+> kanoli:start 2026-04-12
 > kanoli:due 2026-04-16
 
 ### Notes
@@ -66,6 +70,7 @@ First note
 - [x] Ship
 '''),
       );
+      expect(savedMarkdown, contains('2026-04-12, 5d'));
 
       final result = store.loadBoard(filePath);
       final loadedItem = result.columns.first.items.first;
@@ -76,6 +81,7 @@ First note
       expect(loadedItem.title, 'Test Item');
       expect(loadedItem.priority, 'A');
       expect(loadedItem.labels, <String>['AI', 'more-testing']);
+      expect(TodoDateFormatter.format(loadedItem.startDate!), '2026-04-12');
       expect(TodoDateFormatter.format(loadedItem.dueDate!), '2026-04-16');
       expect(loadedItem.notes.first.text, 'First note');
       expect(
@@ -95,6 +101,9 @@ First note
         ),
         <bool>[false, true],
       );
+
+      store.save(columns: result.columns, filePath: filePath);
+      expect(File(filePath).readAsStringSync(), contains('2026-04-12, 5d'));
     });
 
     test(
@@ -109,6 +118,7 @@ First note
 > kanoli:id 11111111-1111-1111-1111-111111111111
 > kanoli:priority A
 > kanoli:labels release, macos
+> kanoli:start 2026-05-01
 > kanoli:due 2026-05-10
 
 ### Notes
@@ -143,6 +153,7 @@ Second note
         expect(item.title, 'Finish release');
         expect(item.priority, 'A');
         expect(item.labels, <String>['release', 'macos']);
+        expect(TodoDateFormatter.format(item.startDate!), '2026-05-01');
         expect(TodoDateFormatter.format(item.dueDate!), '2026-05-10');
         expect(item.notes.length, 2);
         expect(item.notes.first.text, 'First note line\nSecond note line');
@@ -290,6 +301,43 @@ Second note
       expect(item.checklists.single.id, '20323199-5C5C-4DD5-A1BF-CAF95390327C');
       expect(item.checklists.single.items.length, 2);
       expect(item.checklists.single.items.last.isDone, isTrue);
+    });
+
+    test('omits start metadata when not present', () {
+      final store = MarkdownBoardStore();
+
+      final serialized = store.serialize(<BoardColumn>[
+        BoardColumn(
+          title: 'Doing',
+          items: <BoardItem>[
+            BoardItem(
+              id: '11111111-1111-1111-1111-111111111111',
+              title: 'No start date',
+            ),
+          ],
+        ),
+      ]);
+
+      expect(serialized, isNot(contains('> kanoli:start ')));
+    });
+
+    test('legacy markdown without start metadata still parses', () {
+      final store = MarkdownBoardStore();
+      final filePath = _tempFilePath('.md');
+      File(filePath).writeAsStringSync('''
+# Doing
+
+## Legacy compatible
+> kanoli:id 11111111-1111-1111-1111-111111111111
+> kanoli:due 2026-06-10
+''');
+
+      final result = store.loadBoard(filePath);
+      final item = result.columns.first.items.first;
+
+      expect(result.errorMessage, isNull);
+      expect(item.startDate, isNull);
+      expect(TodoDateFormatter.format(item.dueDate!), '2026-06-10');
     });
   });
 }

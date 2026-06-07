@@ -75,8 +75,12 @@ class BoardGanttView extends StatelessWidget {
     BuildContext context,
     List<BoardTimelineEntry> entries,
   ) {
-    final firstDate = _startOfDay(entries.first.dueDate!);
-    final lastDate = _startOfDay(entries.last.dueDate!);
+    final firstDate = _startOfDay(entries.first.effectiveStartDate!);
+    final lastDate = entries
+        .map((BoardTimelineEntry entry) => _startOfDay(entry.effectiveEndDate!))
+        .reduce(
+          (DateTime left, DateTime right) => left.isAfter(right) ? left : right,
+        );
     final dayCount = lastDate.difference(firstDate).inDays + 1;
     final timelineWidth = dayCount * _dayWidth;
 
@@ -119,7 +123,10 @@ class BoardGanttView extends StatelessWidget {
     DateTime firstDate,
     int dayCount,
   ) {
-    final offset = _startOfDay(entry.dueDate!).difference(firstDate).inDays;
+    final offset = _startOfDay(
+      entry.effectiveStartDate!,
+    ).difference(firstDate).inDays;
+    final width = (entry.effectiveDurationInDays! * _dayWidth) - 16.0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -169,7 +176,7 @@ class BoardGanttView extends StatelessWidget {
                 Positioned(
                   left: (offset * _dayWidth) + 8,
                   top: 8,
-                  width: _dayWidth - 16,
+                  width: width,
                   bottom: 8,
                   child: BoardGanttMarker(
                     key: ValueKey<String>('marker-${entry.item.id}'),
