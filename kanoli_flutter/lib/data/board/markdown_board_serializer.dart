@@ -1,7 +1,21 @@
 // Serializes board columns to the readable Kanoli Markdown v2.1 format.
 import '../../domain/board/board_entities.dart';
+import 'markdown_board_document.dart';
+import 'markdown_board_managed_sections.dart';
 
 class MarkdownBoardSerializer {
+  String serializeDocument(MarkdownBoardDocument document) {
+    final boardMarkdown = serialize(document.columns);
+    final timeline = document.managedTimelineMermaid;
+    if (timeline == null) {
+      return boardMarkdown;
+    }
+    return MarkdownBoardManagedSections().appendTimeline(
+      boardMarkdown,
+      timeline,
+    );
+  }
+
   String serialize(List<BoardColumn> columns) {
     // The save format favors clean Markdown sections with machine metadata in
     // namespaced blockquotes.

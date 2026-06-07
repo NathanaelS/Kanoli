@@ -16,6 +16,7 @@ import '../../../data/board/todo_board_store.dart';
 import '../../../domain/board/board_entities.dart';
 import '../application/board_session_controller.dart';
 import '../application/card_search.dart';
+import 'board_gantt_view.dart';
 import 'card_search_palette.dart';
 import 'item_editor_sheet.dart';
 
@@ -57,6 +58,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
   final FocusNode _newColumnTitleFocusNode = FocusNode();
   final FocusNode _newItemTitleFocusNode = FocusNode();
   final FocusNode _boardTabRowFocusNode = FocusNode();
+  bool _showTimelineView = false;
   bool _dialogInProgress = false;
   bool _cardSearchPaletteVisible = false;
   bool _missingSessionPromptVisible = false;
@@ -529,9 +531,10 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     final tabs = widget.controller.boardTabs;
     final selectedTabId = widget.controller.selectedTabId;
     final todoCountsByCardId = _todoCountsByCardId();
-    final columns = widget.controller.isFilterActive
+    final boardColumns = widget.controller.isFilterActive
         ? widget.controller.filteredResultsColumns()
         : widget.controller.visibleColumns;
+    final timelineColumns = widget.controller.columns.toList();
 
     return Column(
       children: <Widget>[
@@ -566,7 +569,40 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
               ),
             ),
           ),
-        if (widget.controller.isFilterActive)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: <Widget>[
+              SegmentedButton<bool>(
+                segments: const <ButtonSegment<bool>>[
+                  ButtonSegment<bool>(
+                    value: false,
+                    icon: Icon(Icons.view_column_outlined),
+                    label: Text('Board'),
+                  ),
+                  ButtonSegment<bool>(
+                    value: true,
+                    icon: Icon(Icons.timeline_outlined),
+                    label: Text('Timeline'),
+                  ),
+                ],
+                selected: <bool>{_showTimelineView},
+                onSelectionChanged: (Set<bool> selection) {
+                  setState(() {
+                    _showTimelineView = selection.first;
+                  });
+                },
+              ),
+              const Spacer(),
+              if (_showTimelineView)
+                Text(
+                  'All cards timeline',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+        ),
+        if (!_showTimelineView && widget.controller.isFilterActive)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -574,7 +610,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                 const Icon(Icons.filter_alt, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'Filtered results (${columns.length} columns)',
+                  'Filtered results (${boardColumns.length} columns)',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const Spacer(),
@@ -587,57 +623,66 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           ),
         const Divider(height: 1),
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (columns.isEmpty)
-                  const SizedBox(
-                    width: 320,
-                    child: Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text('No columns to show for the current view.'),
-                      ),
-                    ),
-                  ),
-                ...columns.map((BoardColumn column) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _columnCard(
-                      context,
-                      column,
-                      visuals,
-                      todoCountsByCardId,
-                    ),
-                  );
-                }),
-                if (!widget.controller.isFilterActive)
-                  SizedBox(
-                    width: 240,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: visuals.addColumnButtonGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.outline),
-                      ),
-                      child: OutlinedButton.icon(
-                        onPressed: _addColumn,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.foreground,
-                          backgroundColor: Colors.transparent,
-                          side: BorderSide.none,
+          child: _showTimelineView
+              ? BoardGanttView(
+                  columns: timelineColumns,
+                  onOpenItem: (String itemId) {
+                    unawaited(_openItemEditor(itemId));
+                  },
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      if (boardColumns.isEmpty)
+                        const SizedBox(
+                          width: 320,
+                          child: Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text(
+                                'No columns to show for the current view.',
+                              ),
+                            ),
+                          ),
                         ),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Column'),
-                      ),
-                    ),
+                      ...boardColumns.map((BoardColumn column) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: _columnCard(
+                            context,
+                            column,
+                            visuals,
+                            todoCountsByCardId,
+                          ),
+                        );
+                      }),
+                      if (!widget.controller.isFilterActive)
+                        SizedBox(
+                          width: 240,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: visuals.addColumnButtonGradient,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.outline),
+                            ),
+                            child: OutlinedButton.icon(
+                              onPressed: _addColumn,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.foreground,
+                                backgroundColor: Colors.transparent,
+                                side: BorderSide.none,
+                              ),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Column'),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
-          ),
+                ),
         ),
       ],
     );

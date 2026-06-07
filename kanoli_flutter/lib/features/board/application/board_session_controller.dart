@@ -400,8 +400,10 @@ class BoardSessionController extends ChangeNotifier {
     final file = File(normalizedPath);
 
     if (!file.existsSync()) {
-      file.parent.createSync(recursive: true);
-      file.writeAsStringSync('');
+      _markdownBoardStore.save(
+        columns: <BoardColumn>[],
+        filePath: normalizedPath,
+      );
     }
 
     await openBoard(normalizedPath);
