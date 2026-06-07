@@ -18,7 +18,8 @@ class MarkdownBoardMermaidFormatter {
     for (final entry in entries) {
       lines.add(
         '  ${_taskLabel(entry)} :${_taskId(entry.item.id)}, '
-        '${TodoDateFormatter.format(entry.dueDate!)}, 1d',
+        '${TodoDateFormatter.format(entry.effectiveStartDate!)}, '
+        '${entry.effectiveDurationInDays}d',
       );
     }
     return lines.join('\n');

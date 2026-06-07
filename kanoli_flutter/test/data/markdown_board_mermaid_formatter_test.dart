@@ -24,17 +24,18 @@ gantt
       );
     });
 
-    test('sorts dated cards by date then stable board order', () {
+    test('sorts dated cards by effective range and emits durations', () {
       final formatter = MarkdownBoardMermaidFormatter();
       final columns = <BoardColumn>[
         BoardColumn(
           title: 'Doing',
           items: <BoardItem>[
-            _datedItem(id: 'later', title: 'Later', due: '2026-06-08'),
+            _datedItem(id: 'later', title: 'Later', start: '2026-06-08'),
             _datedItem(
-              id: 'same-first',
-              title: 'Same first',
-              due: '2026-06-06',
+              id: 'range',
+              title: 'Range',
+              start: '2026-06-06',
+              due: '2026-06-08',
             ),
           ],
         ),
@@ -42,8 +43,9 @@ gantt
           title: 'Done',
           items: <BoardItem>[
             _datedItem(
-              id: 'same-second',
-              title: 'Same second',
+              id: 'same-start-short',
+              title: 'Same start short',
+              start: '2026-06-06',
               due: '2026-06-06',
             ),
           ],
@@ -53,13 +55,17 @@ gantt
       final mermaid = formatter.format(columns);
 
       expect(
-        mermaid.indexOf('Doing / Same first'),
-        lessThan(mermaid.indexOf('Done / Same second')),
+        mermaid.indexOf('Done / Same start short'),
+        lessThan(mermaid.indexOf('Doing / Range')),
       );
       expect(
-        mermaid.indexOf('Done / Same second'),
+        mermaid.indexOf('Doing / Range'),
         lessThan(mermaid.indexOf('Doing / Later')),
       );
+      expect(mermaid, contains('Done / Same start short'));
+      expect(mermaid, contains('2026-06-06, 1d'));
+      expect(mermaid, contains('Doing / Range'));
+      expect(mermaid, contains('2026-06-06, 3d'));
     });
 
     test('emits safe stable IDs and single-line task labels', () {
@@ -90,11 +96,13 @@ gantt
 BoardItem _datedItem({
   required String id,
   required String title,
-  required String due,
+  String? start,
+  String? due,
 }) {
   return BoardItem(
     id: id,
     title: title,
-    dueDate: TodoDateFormatter.tryParse(due),
+    startDate: start == null ? null : TodoDateFormatter.tryParse(start),
+    dueDate: due == null ? null : TodoDateFormatter.tryParse(due),
   );
 }
