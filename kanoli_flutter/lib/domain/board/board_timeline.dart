@@ -18,7 +18,7 @@ class BoardTimeline {
           columnTitle: column.menuTitle,
           boardOrder: boardOrder,
         );
-        if (item.dueDate == null) {
+        if (entry.effectiveStartDate == null) {
           undated.add(entry);
         } else {
           dated.add(entry);
@@ -28,11 +28,18 @@ class BoardTimeline {
     }
 
     dated.sort((left, right) {
-      final dueComparison = _dateOnly(
-        left.dueDate!,
-      ).compareTo(_dateOnly(right.dueDate!));
-      return dueComparison != 0
-          ? dueComparison
+      final startComparison = _dateOnly(
+        left.effectiveStartDate!,
+      ).compareTo(_dateOnly(right.effectiveStartDate!));
+      if (startComparison != 0) {
+        return startComparison;
+      }
+
+      final endComparison = _dateOnly(
+        left.effectiveEndDate!,
+      ).compareTo(_dateOnly(right.effectiveEndDate!));
+      return endComparison != 0
+          ? endComparison
           : left.boardOrder.compareTo(right.boardOrder);
     });
     return BoardTimeline._(datedEntries: dated, undatedEntries: undated);
@@ -61,5 +68,50 @@ class BoardTimelineEntry {
   final String columnTitle;
   final int boardOrder;
 
+  DateTime? get startDate => item.startDate;
   DateTime? get dueDate => item.dueDate;
+
+  DateTime? get effectiveStartDate {
+    final range = _effectiveRange();
+    return range.$1;
+  }
+
+  DateTime? get effectiveEndDate {
+    final range = _effectiveRange();
+    return range.$2;
+  }
+
+  int? get effectiveDurationInDays {
+    final start = effectiveStartDate;
+    final end = effectiveEndDate;
+    if (start == null || end == null) {
+      return null;
+    }
+    return BoardTimeline._dateOnly(
+          end,
+        ).difference(BoardTimeline._dateOnly(start)).inDays +
+        1;
+  }
+
+  (DateTime?, DateTime?) _effectiveRange() {
+    final start = startDate;
+    final due = dueDate;
+    if (start != null && due != null) {
+      final normalizedStart = BoardTimeline._dateOnly(start);
+      final normalizedDue = BoardTimeline._dateOnly(due);
+      if (normalizedStart.isAfter(normalizedDue)) {
+        throw ArgumentError(
+          'Board item ${item.id} has startDate after dueDate.',
+        );
+      }
+      return (start, due);
+    }
+    if (due != null) {
+      return (due, due);
+    }
+    if (start != null) {
+      return (start, start);
+    }
+    return (null, null);
+  }
 }

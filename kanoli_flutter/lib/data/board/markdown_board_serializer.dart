@@ -50,6 +50,10 @@ class MarkdownBoardSerializer {
       lines.add('> kanoli:labels ${labels.join(', ')}');
     }
 
+    if (item.startDate != null) {
+      lines.add('> kanoli:start ${TodoDateFormatter.format(item.startDate!)}');
+    }
+
     if (item.dueDate != null) {
       lines.add('> kanoli:due ${TodoDateFormatter.format(item.dueDate!)}');
     }

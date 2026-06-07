@@ -107,6 +107,7 @@ void applyItemMetadata({
         bodyMarkdown: item.bodyMarkdown,
         notes: item.notes,
         checklists: item.checklists,
+        startDate: item.startDate,
         dueDate: item.dueDate,
         priority: item.priority,
         labels: item.labels,
@@ -125,6 +126,9 @@ void applyItemMetadata({
       return;
     case 'due':
       item.dueDate = TodoDateFormatter.tryParse(value);
+      return;
+    case 'start':
+      item.startDate = TodoDateFormatter.tryParse(value);
       return;
   }
 }

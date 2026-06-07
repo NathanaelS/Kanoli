@@ -5,6 +5,7 @@ import 'package:kanoli_flutter/core/theme/app_theme.dart';
 import 'package:kanoli_flutter/domain/board/board_entities.dart';
 import 'package:kanoli_flutter/features/board/presentation/board_gantt_styles.dart';
 import 'package:kanoli_flutter/features/board/presentation/board_gantt_view.dart';
+import 'package:kanoli_flutter/features/board/presentation/item_editor_sheet.dart';
 
 void main() {
   testWidgets('shows empty state when the board has no cards', (
@@ -93,6 +94,122 @@ void main() {
     await tester.pump();
 
     expect(openedItemId, 'alpha');
+  });
+
+  testWidgets('renders start-only and inclusive ranged cards on the timeline', (
+    WidgetTester tester,
+  ) async {
+    String? openedItemId;
+
+    await _pumpTimeline(
+      tester,
+      columns: <BoardColumn>[
+        BoardColumn(
+          id: 'doing',
+          title: 'Doing',
+          items: <BoardItem>[
+            BoardItem(
+              id: 'alpha',
+              title: 'Alpha',
+              startDate: TodoDateFormatter.tryParse('2026-06-07'),
+            ),
+            BoardItem(
+              id: 'beta',
+              title: 'Beta',
+              startDate: TodoDateFormatter.tryParse('2026-06-08'),
+              dueDate: TodoDateFormatter.tryParse('2026-06-10'),
+            ),
+          ],
+        ),
+      ],
+      onOpenItem: (String itemId) {
+        openedItemId = itemId;
+      },
+    );
+
+    expect(find.text('No due date'), findsNothing);
+    expect(find.text('2026-06-07'), findsOneWidget);
+    expect(find.text('2026-06-08'), findsOneWidget);
+    expect(find.text('2026-06-09'), findsOneWidget);
+    expect(find.text('2026-06-10'), findsOneWidget);
+
+    final alphaWidth = tester
+        .getSize(find.byKey(const ValueKey<String>('marker-alpha')))
+        .width;
+    final betaWidth = tester
+        .getSize(find.byKey(const ValueKey<String>('marker-beta')))
+        .width;
+
+    expect(betaWidth, greaterThan(alphaWidth));
+
+    await tester.tap(find.byKey(const ValueKey<String>('marker-beta')));
+    await tester.pump();
+
+    expect(openedItemId, 'beta');
+  });
+
+  testWidgets('item editor start and due date controls save a valid range', (
+    WidgetTester tester,
+  ) async {
+    BoardItem? savedItem;
+
+    await _pumpEditor(
+      tester,
+      item: BoardItem(id: 'alpha', title: 'Alpha'),
+      onSave: (BoardItem item) {
+        savedItem = item;
+      },
+    );
+
+    expect(find.text('Has start date'), findsOneWidget);
+    expect(find.text('Has due date'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Has start date'),
+          matching: find.byType(Row),
+        ),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await tester.pump();
+
+    expect(savedItem?.startDate, isNotNull);
+    expect(savedItem?.dueDate, isNull);
+
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Has due date'),
+          matching: find.byType(Row),
+        ),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await tester.pump();
+
+    expect(savedItem?.dueDate, savedItem?.startDate);
+  });
+
+  testWidgets('item editor surfaces invalid existing date ranges', (
+    WidgetTester tester,
+  ) async {
+    await _pumpEditor(
+      tester,
+      item: BoardItem(
+        id: 'invalid',
+        title: 'Invalid',
+        startDate: TodoDateFormatter.tryParse('2026-06-10'),
+        dueDate: TodoDateFormatter.tryParse('2026-06-09'),
+      ),
+      onSave: (_) {},
+    );
+
+    expect(
+      find.text('Start date cannot be later than due date.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('uses the same style for cards from the same column', (
@@ -277,6 +394,7 @@ void main() {
             BoardItem(
               id: 'beta',
               title: 'Beta',
+              startDate: TodoDateFormatter.tryParse('2026-06-17'),
               dueDate: TodoDateFormatter.tryParse('2026-06-18'),
             ),
           ],
@@ -310,6 +428,36 @@ Future<void> _pumpTimeline(
       theme: AppTheme.darkAura,
       home: Scaffold(
         body: BoardGanttView(columns: columns, onOpenItem: onOpenItem),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpEditor(
+  WidgetTester tester, {
+  required BoardItem item,
+  required ValueChanged<BoardItem> onSave,
+}) async {
+  tester.view.physicalSize = const Size(1200, 1200);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.darkAura,
+      home: Scaffold(
+        body: ItemEditorSheet(
+          item: item,
+          boardFilePath: null,
+          columnTitle: 'Doing',
+          allColumns: <BoardColumn>[
+            BoardColumn(title: 'Doing', items: <BoardItem>[item]),
+          ],
+          onOpenItem: (_) {},
+          onSave: onSave,
+          onTodoPathChanged: (_) {},
+        ),
       ),
     ),
   );
