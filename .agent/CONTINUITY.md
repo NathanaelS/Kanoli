@@ -26,6 +26,11 @@
 
 ## [PROGRESS]
 
+- 2026-06-16T17:53:42Z [CODE] Split note timestamp formatting between UI and storage: in-app note cards now display `Month Day, Year h:mm AM/PM`, while Markdown persistence still uses the existing full ISO timestamp with timezone offset.
+- 2026-06-16T17:37:30Z [CODE] Note-composer keyboard shortcuts now match chat-style semantics: plain `Enter` submits the note, while only `Shift+Enter` inserts a newline at the current cursor/selection.
+- 2026-06-16T16:01:11Z [CODE] The note composer now uses multiline text input with button-only submission, so newline entry no longer posts the note and saved notes preserve embedded line breaks.
+- 2026-06-16T15:56:32Z [CODE] Finalized the item-editor note composer behavior: posted notes now render once as read-only note cards with the formatted `createdAt` timestamp visible, while the composer remains the only editable note input.
+- 2026-06-16T15:46:18Z [CODE] Replaced the item editor's empty-note insertion flow with a note composer in `item_editor_sheet.dart`; submitted notes now create a timestamped `BoardNote`, clear the composer, and immediately save the draft while leaving existing note editing behavior unchanged.
 - 2026-06-04T09:13:00-07:00 [CODE] Removed the non-macOS `2s` timeouts from `board_file_access_service.dart` so user-driven open/save dialogs can complete normally; the earlier absolute-path guard remains in place to block working-directory fallbacks.
 - 2026-06-04T09:01:00-07:00 [CODE] Hardened non-macOS board open/create/import path handling in `board_workspace_page.dart` so relative paths are rejected with a visible error instead of silently resolving against the app working directory.
 - 2026-06-04T08:27:00-07:00 [CODE] Debounced typing-driven card editor saves in `item_editor_sheet.dart` to avoid full-board persistence on every keystroke; explicit non-typing edits still save immediately so Markdown/local-first behavior stays unchanged.
@@ -103,6 +108,11 @@
 
 ## [OUTCOMES]
 
+- 2026-06-16T17:53:42Z [TOOL] Note timestamp display validation passed: `dart format lib/domain/board/board_formatters.dart lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
+- 2026-06-16T17:37:30Z [TOOL] Note shortcut validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
+- 2026-06-16T16:01:11Z [TOOL] Multiline note-composer validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
+- 2026-06-16T15:56:32Z [TOOL] Read-only note rendering validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
+- 2026-06-16T15:46:18Z [TOOL] Note-composer validation passed: `dart format .`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
 - 2026-06-04T09:13:00-07:00 [TOOL] Windows picker-flow validation passed: `dart format lib/core/files/board_file_access_service.dart`, `flutter analyze lib/core/files/board_file_access_service.dart lib/features/board/presentation/board_workspace_page.dart`, and `flutter test test/features/board/board_workspace_page_test.dart`.
 - 2026-06-04T09:01:00-07:00 [TOOL] Path-handling validation passed: `dart format lib/features/board/presentation/board_workspace_page.dart`, `flutter analyze lib/features/board/presentation/board_workspace_page.dart`, and `flutter test test/features/board/board_workspace_page_test.dart`.
 - 2026-06-04T08:27:00-07:00 [TOOL] Debounced editor-save validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart`, `flutter analyze lib/features/board/presentation/item_editor_sheet.dart`, and `flutter test test/features/board/board_workspace_page_test.dart`.

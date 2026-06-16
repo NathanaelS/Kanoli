@@ -25,6 +25,21 @@ abstract final class TodoDateFormatter {
 
 abstract final class NoteDateFormatter {
   // Notes preserve full timestamps with local timezone offsets in Markdown.
+  static const List<String> _monthNames = <String>[
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
   static DateTime? tryParse(String value) {
     return DateTime.tryParse(value);
   }
@@ -45,6 +60,19 @@ abstract final class NoteDateFormatter {
     final offsetMinutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
 
     return '$year-$month-${day}T$hour:$minute:$second$sign$offsetHours:$offsetMinutes';
+  }
+
+  static String formatForDisplay(DateTime value) {
+    final local = value.toLocal();
+    final month = _monthNames[local.month - 1];
+    final day = local.day;
+    final year = local.year;
+    final hour24 = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final meridiem = hour24 >= 12 ? 'PM' : 'AM';
+    final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+
+    return '$month $day, $year $hour12:$minute $meridiem';
   }
 }
 

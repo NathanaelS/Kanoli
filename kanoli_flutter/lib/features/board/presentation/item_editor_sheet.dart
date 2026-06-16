@@ -58,6 +58,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   List<TodoListEntry> _todoItems = <TodoListEntry>[];
   List<String> _otherTodoLines = <String>[];
   final TextEditingController _todoAddController = TextEditingController();
+  final TextEditingController _noteComposerController = TextEditingController();
+  final FocusNode _noteComposerFocusNode = FocusNode();
   final TextEditingController _labelsController = TextEditingController();
   Timer? _pendingDraftSave;
 
@@ -126,6 +128,8 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   void dispose() {
     _flushPendingDraftSave();
     _todoAddController.dispose();
+    _noteComposerController.dispose();
+    _noteComposerFocusNode.dispose();
     _labelsController.dispose();
     super.dispose();
   }
@@ -446,21 +450,41 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        const Text('Notes', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text('Notes', style: TextStyle(fontWeight: FontWeight.w600)),
+            Expanded(
+              child: CallbackShortcuts(
+                bindings: <ShortcutActivator, VoidCallback>{
+                  const SingleActivator(LogicalKeyboardKey.enter):
+                      _submitNoteComposer,
+                  const SingleActivator(LogicalKeyboardKey.enter, shift: true):
+                      _insertComposerNewline,
+                },
+                child: TextField(
+                  key: const ValueKey<String>('new-note-composer'),
+                  controller: _noteComposerController,
+                  focusNode: _noteComposerFocusNode,
+                  decoration: const InputDecoration(hintText: 'Write a note'),
+                  keyboardType: TextInputType.multiline,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.newline,
+                ),
+              ),
+            ),
             const SizedBox(width: 8),
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _notes.add(BoardNote(text: ''));
-                });
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add note'),
+            IconButton(
+              key: const ValueKey<String>('post-note-button'),
+              tooltip: 'Post note',
+              onPressed: _submitNoteComposer,
+              icon: const Icon(Icons.send),
             ),
           ],
         ),
+        const SizedBox(height: 8),
         ..._notes.map((BoardNote note) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -468,22 +492,22 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      TextFormField(
-                        initialValue: note.text,
-                        minLines: 2,
-                        maxLines: 4,
-                        decoration: const InputDecoration(hintText: 'Note'),
-                        onChanged: (String value) {
-                          note.text = value;
-                          _scheduleDraftSave();
-                          setState(() {});
-                        },
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            NoteDateFormatter.formatForDisplay(note.createdAt),
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          const SizedBox(height: 6),
+                          _HyperlinkedText(note.text),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      _HyperlinkedText(note.text),
-                    ],
+                    ),
                   ),
                 ),
                 IconButton(
@@ -853,6 +877,36 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
         .toList();
 
     widget.onSave(_draft);
+  }
+
+  void _submitNoteComposer() {
+    final text = _noteComposerController.text.trim();
+    if (text.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _notes.add(BoardNote(text: text));
+      _noteComposerController.clear();
+      _saveDraft();
+    });
+  }
+
+  void _insertComposerNewline() {
+    final selection = _noteComposerController.selection;
+    final text = _noteComposerController.text;
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+    final clampedStart = start.clamp(0, text.length);
+    final clampedEnd = end.clamp(0, text.length);
+    final updatedText = text.replaceRange(clampedStart, clampedEnd, '\n');
+    final caretOffset = clampedStart + 1;
+
+    _noteComposerController.value = TextEditingValue(
+      text: updatedText,
+      selection: TextSelection.collapsed(offset: caretOffset),
+    );
+    _noteComposerFocusNode.requestFocus();
   }
 
   void _refreshBoardFace() {
