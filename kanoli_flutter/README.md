@@ -1,6 +1,6 @@
-# Kanoli Flutter Port
+# Kanoli
 
-This project is the Flutter recreation of Kanoli and is intentionally isolated from the original Swift project.
+This directory contains the Flutter/Dart Kanoli application workspace.
 
 ## Phase 2 status
 

@@ -1,10 +1,10 @@
 // Verifies Flutter timeline ordering stays aligned with Mermaid generation.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/core/theme/app_theme.dart';
-import 'package:kanoli_flutter/data/board/markdown_board_mermaid_formatter.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
-import 'package:kanoli_flutter/features/board/presentation/board_gantt_view.dart';
+import 'package:kanoli/core/theme/app_theme.dart';
+import 'package:kanoli/data/board/markdown_board_mermaid_formatter.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
+import 'package:kanoli/features/board/presentation/board_gantt_view.dart';
 
 void main() {
   testWidgets('uses the same dated ordering and undated exclusion as Mermaid', (

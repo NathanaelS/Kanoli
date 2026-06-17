@@ -1,7 +1,7 @@
 // Covers command-palette card search matching over active-board content.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
-import 'package:kanoli_flutter/features/board/application/card_search.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
+import 'package:kanoli/features/board/application/card_search.dart';
 
 void main() {
   test('matches card title, labels, notes, checklists, and todo text', () {

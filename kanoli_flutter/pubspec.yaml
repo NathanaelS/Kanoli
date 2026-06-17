@@ -1,5 +1,5 @@
-name: kanoli_flutter
-description: 'Kanoli Flutter rebuild workspace.'
+name: kanoli
+description: 'Kanoli application workspace.'
 publish_to: 'none'
 version: 0.7.0+1
 

@@ -2,9 +2,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/data/board/markdown_board_document.dart';
-import 'package:kanoli_flutter/data/board/markdown_board_store.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
+import 'package:kanoli/data/board/markdown_board_document.dart';
+import 'package:kanoli/data/board/markdown_board_store.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
 
 void main() {
   group('managed Mermaid timeline section', () {

@@ -1,7 +1,7 @@
 // Covers the shared card ordering used by Mermaid and Flutter timelines.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
-import 'package:kanoli_flutter/domain/board/board_timeline.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
+import 'package:kanoli/domain/board/board_timeline.dart';
 
 void main() {
   test('builds effective ranges and sorts by start, end, then board order', () {

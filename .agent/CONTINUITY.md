@@ -91,6 +91,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-06-17T18:16:45Z [TOOL] Superseded by the 2026-06-17 naming cleanup: initial repo-wide release-naming scan found live iOS, Android, Linux, Windows, and Dart package identity cleanup needs while macOS main app identity and app version source were already aligned.
 - 2026-06-17T14:40:45Z [TOOL] iPad/iOS release-readiness check: local macOS environment has Flutter 3.44.1, Xcode 26.5, CocoaPods 1.16.2, iOS deployment target 13.0, and `TARGETED_DEVICE_FAMILY = "1,2"`; `flutter build ios --release --no-codesign` succeeds. App Store release signing remains unready locally because only Apple Development and Developer ID Application identities were found, with no Apple Distribution identity or local iOS provisioning profiles.
 - 2026-06-16T20:37:49Z [TOOL] Running multiple `flutter test` processes in parallel on this workspace can race in `build/unit_test_assets/NativeAssetsManifest.json` setup and produce a `PathNotFoundException`; rerunning the focused tests sequentially avoids the Flutter tool issue and validates the todo-count work cleanly.
 - 2026-06-04T09:13:00-07:00 [CODE] The Windows `Create File` regression was caused by `openFile`/`getSaveLocation` calls in `board_file_access_service.dart` being wrapped in a `2s` timeout, which made normal human picker interaction fall back to the manual relative-path prompt.
@@ -122,6 +123,7 @@
 
 ## [OUTCOMES]
 
+- 2026-06-17T18:43:21Z [TOOL] Completed live naming/version cleanup: Dart package name is now `kanoli`, package imports use `package:kanoli/...`, iOS/macOS test bundle IDs and hosts align with Kanoli identity, Android uses `app.kanoli.kanoli` with app label `Kanoli`, Linux/Windows product/window names use `Kanoli`, and Windows native fallback version now matches app version `0.7.0`. Validation passed with `dart format .`, `flutter analyze`, full `flutter test`, plist/project linting, targeted stale-name scans, and `git diff --check`; historical logs and path references were preserved.
 - 2026-06-17T14:40:45Z [TOOL] Completed current-environment iPad release assessment: unsigned iOS release artifact builds at `kanoli_flutter/build/ios/iphoneos/Runner.app`; remaining release work is App Store identity/provisioning, product metadata/privacy setup, bundle/display-name cleanup, iPad smoke testing, archive/export/upload, and App Review preparation.
 - 2026-06-17T21:00:00Z [TOOL] Revalidated the item-editor keyboard flow with `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, focused `flutter analyze` on those two files, and `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`. The todo regression test now requires two consecutive Enter submissions without manually re-focusing the field.
 - 2026-06-17T20:45:00Z [TOOL] Item-editor keyboard-flow validation passed with `dart format .`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`. Coverage now asserts checklist Enter-to-next-item focus, todo Enter-to-add with retained input focus, and preserved note Enter/Shift+Enter behavior.

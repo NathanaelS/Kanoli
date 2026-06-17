@@ -1,4 +1,4 @@
-package ko.kanoli.kanoli_flutter
+package app.kanoli.kanoli
 
 import io.flutter.embedding.android.FlutterActivity
 

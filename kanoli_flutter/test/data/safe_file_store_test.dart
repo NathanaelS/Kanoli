@@ -2,7 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/data/board/safe_file_store.dart';
+import 'package:kanoli/data/board/safe_file_store.dart';
 
 void main() {
   group('SafeFileStore', () {

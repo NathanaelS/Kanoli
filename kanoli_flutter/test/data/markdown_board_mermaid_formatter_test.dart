@@ -1,7 +1,7 @@
 // Covers deterministic Mermaid Gantt generation from board card state.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/data/board/markdown_board_mermaid_formatter.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
+import 'package:kanoli/data/board/markdown_board_mermaid_formatter.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
 
 void main() {
   group('MarkdownBoardMermaidFormatter', () {

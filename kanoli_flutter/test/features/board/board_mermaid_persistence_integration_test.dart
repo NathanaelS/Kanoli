@@ -2,11 +2,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/core/config/app_environment.dart';
-import 'package:kanoli_flutter/core/logging/app_logger.dart';
-import 'package:kanoli_flutter/data/board/markdown_board_store.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
-import 'package:kanoli_flutter/features/board/application/board_session_controller.dart';
+import 'package:kanoli/core/config/app_environment.dart';
+import 'package:kanoli/core/logging/app_logger.dart';
+import 'package:kanoli/data/board/markdown_board_store.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
+import 'package:kanoli/features/board/application/board_session_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

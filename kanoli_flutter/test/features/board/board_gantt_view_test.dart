@@ -1,11 +1,11 @@
 // Widget coverage for the board-wide timeline view.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanoli_flutter/core/theme/app_theme.dart';
-import 'package:kanoli_flutter/domain/board/board_entities.dart';
-import 'package:kanoli_flutter/features/board/presentation/board_gantt_styles.dart';
-import 'package:kanoli_flutter/features/board/presentation/board_gantt_view.dart';
-import 'package:kanoli_flutter/features/board/presentation/item_editor_sheet.dart';
+import 'package:kanoli/core/theme/app_theme.dart';
+import 'package:kanoli/domain/board/board_entities.dart';
+import 'package:kanoli/features/board/presentation/board_gantt_styles.dart';
+import 'package:kanoli/features/board/presentation/board_gantt_view.dart';
+import 'package:kanoli/features/board/presentation/item_editor_sheet.dart';
 
 void main() {
   testWidgets('shows empty state when the board has no cards', (

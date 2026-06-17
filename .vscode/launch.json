@@ -11,20 +11,20 @@
             "program": "lib/main.dart"
         },
         {
-            "name": "kanoli_flutter",
+            "name": "Kanoli",
             "cwd": "kanoli_flutter",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "kanoli_flutter (profile mode)",
+            "name": "Kanoli (profile mode)",
             "cwd": "kanoli_flutter",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "kanoli_flutter (release mode)",
+            "name": "Kanoli (release mode)",
             "cwd": "kanoli_flutter",
             "request": "launch",
             "type": "dart",

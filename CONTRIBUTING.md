@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing to Kanoli.
 
-This repository contains the Flutter/Dart rebuild of Kanoli. The original Swift version lives separately at [NathanaelS/KanoliSwift](https://github.com/NathanaelS/KanoliSwift).
+This repository contains the Flutter/Dart implementation of Kanoli. The original Swift version lives separately at [NathanaelS/KanoliSwift](https://github.com/NathanaelS/KanoliSwift).
 
 ## How to Contribute
 
@@ -19,7 +19,7 @@ This repository contains the Flutter/Dart rebuild of Kanoli. The original Swift 
 
 Please use GitHub Issues:
 
-- https://github.com/NathanaelS/KanoliDart/issues
+- https://github.com/NathanaelS/Kanoli/issues
 
 When reporting bugs, include:
 
