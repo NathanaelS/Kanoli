@@ -530,7 +530,7 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
     // and add-column affordance.
     final tabs = widget.controller.boardTabs;
     final selectedTabId = widget.controller.selectedTabId;
-    final todoCountsByCardId = _todoCountsByCardId();
+    final todoCountsByCardId = widget.controller.activeTodoCountsByCardId;
     final boardColumns = widget.controller.isFilterActive
         ? widget.controller.filteredResultsColumns()
         : widget.controller.visibleColumns;
@@ -1133,31 +1133,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
-  }
-
-  Map<String, TodoBoardItemCounts> _todoCountsByCardId() {
-    final path = widget.controller.activeTodoPath;
-    if (path == null || path.trim().isEmpty) {
-      return const <String, TodoBoardItemCounts>{};
-    }
-
-    try {
-      final todoFile = File(path);
-      if (!todoFile.existsSync()) {
-        return const <String, TodoBoardItemCounts>{};
-      }
-      return _todoBoardStore.countsByCardId(text: todoFile.readAsStringSync());
-    } on FileSystemException catch (error, stackTrace) {
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'kanoli',
-          context: ErrorDescription('while reading todo counts for card tiles'),
-        ),
-      );
-      return const <String, TodoBoardItemCounts>{};
-    }
   }
 
   Future<void> _openCardSearchPalette() async {

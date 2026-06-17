@@ -329,6 +329,53 @@ void main() {
     expect(controller.boardTabs, isEmpty);
   });
 
+  test('loads cached active todo counts for explicit todo path', () async {
+    final todoPath = _tempPath('_counts.todo.txt');
+    File(todoPath).writeAsStringSync(
+      'Task one card:item-1 @Doing\n'
+      'x 2026-06-16 Done task card:item-1 @Doing\n'
+      'Other task card:item-2 @Backlog\n',
+    );
+
+    final controller = BoardSessionController(logger: logger);
+    controller.setActiveTodoPath(todoPath);
+    await _settleAsyncRefresh();
+
+    expect(
+      controller.activeTodoCountsByCardId.keys,
+      containsAll(<String>['item-1', 'item-2']),
+    );
+    expect(controller.activeTodoCountsByCardId['item-1']?.total, 2);
+    expect(controller.activeTodoCountsByCardId['item-1']?.completed, 1);
+    expect(controller.activeTodoCountsByCardId['item-2']?.total, 1);
+  });
+
+  test('clears cached active todo counts when todo path is missing', () async {
+    final todoPath = _tempPath('_missing_counts.todo.txt');
+    final controller = BoardSessionController(logger: logger);
+
+    controller.setActiveTodoPath(todoPath);
+    await _settleAsyncRefresh();
+
+    expect(controller.activeTodoCountsByCardId, isEmpty);
+  });
+
+  test('stale todo count refresh cannot overwrite newer path state', () async {
+    final firstTodoPath = _tempPath('_first_counts.todo.txt');
+    final secondTodoPath = _tempPath('_second_counts.todo.txt');
+    File(firstTodoPath).writeAsStringSync('First task card:first @Doing\n');
+    File(secondTodoPath).writeAsStringSync('Second task card:second @Doing\n');
+
+    final controller = BoardSessionController(logger: logger);
+    controller.setActiveTodoPath(firstTodoPath);
+    controller.setActiveTodoPath(secondTodoPath);
+    await _settleAsyncRefresh();
+
+    expect(controller.activeTodoPath, secondTodoPath);
+    expect(controller.activeTodoCountsByCardId.keys, <String>{'second'});
+    expect(controller.activeTodoCountsByCardId.containsKey('first'), isFalse);
+  });
+
   test('importJsonBoard surfaces parse errors without crashing', () async {
     final badJsonPath = _tempPath('_bad.json');
     final outputBoard = _tempPath('_import_target.md');
@@ -368,4 +415,8 @@ void main() {
 String _tempPath(String suffix) {
   final dir = Directory.systemTemp.createTempSync('kanoli_session_test_');
   return '${dir.path}${Platform.pathSeparator}board$suffix';
+}
+
+Future<void> _settleAsyncRefresh() async {
+  await Future<void>.delayed(const Duration(milliseconds: 25));
 }

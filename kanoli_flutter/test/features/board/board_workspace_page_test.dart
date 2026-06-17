@@ -57,6 +57,52 @@ void main() {
 
     expect(find.byType(CardSearchPalette), findsOneWidget);
   });
+
+  testWidgets('card tile renders cached todo progress from controller state', (
+    WidgetTester tester,
+  ) async {
+    final boardPath = _tempPath('_counts.md');
+    final todoPath = _tempPath('.todo.txt');
+    final markdownStore = MarkdownBoardStore();
+    markdownStore.save(
+      filePath: boardPath,
+      columns: <BoardColumn>[
+        BoardColumn(
+          title: 'Doing',
+          items: <BoardItem>[BoardItem(id: 'alpha', title: 'Alpha task')],
+        ),
+      ],
+    );
+    File(todoPath).writeAsStringSync(
+      'First task card:alpha @Doing\n'
+      'x 2026-06-16 Done task card:alpha @Doing\n',
+    );
+
+    final controller = BoardSessionController(
+      logger: AppLogger(environment: AppEnvironment.dev),
+      markdownBoardStore: markdownStore,
+    );
+    await controller.openBoard(boardPath);
+    await tester.runAsync(() async {
+      controller.setActiveTodoPath(todoPath);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+    });
+    expect(controller.activeTodoCountsByCardId['alpha']?.total, 2);
+    expect(controller.activeTodoCountsByCardId['alpha']?.completed, 1);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BoardWorkspacePage(
+          environment: AppEnvironment.dev,
+          controller: controller,
+          fileAccessService: _NoopBoardFileAccessService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('1/2'), findsOneWidget);
+  });
 }
 
 String _tempPath(String extension) {

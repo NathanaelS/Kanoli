@@ -2,6 +2,7 @@
 
 ## [PLANS]
 
+- 2026-06-16T18:54:08Z [USER] Created `Markdown Plan Files/AVOID_SYNC_TODO_COUNTS_PLAN.md` to plan moving active todo sidecar counting out of `BoardWorkspacePage` rebuilds while preserving board-face todo progress UI and `todo.txt` compatibility.
 - 2026-05-25T21:19:34Z [TOOL] Corrected macOS `0.7.0` notarization submission `451d52aa-f3ee-45ea-b91d-ab1f18a7af39` is processing at Apple; once `Accepted`, staple and validate `kanoli_flutter/dist/Kanoli-0.7.0.dmg` before distribution.
 - 2026-05-25T20:13:53Z [TOOL] Final macOS `0.7.0` distribution gate is Apple notarization and stapling; signed DMG submission is blocked until a `notarytool` Keychain profile named `KanoliNotary` is stored.
 - 2026-05-11T02:13:26Z [USER] Implement Markdown v2.1 preferred card shape on `dev`: optional human-authored card body prose, parser/serializer modularization, roadmap update, and verification.
@@ -26,6 +27,9 @@
 
 ## [PROGRESS]
 
+- 2026-06-16T20:37:49Z [CODE] Finalized Phase 3 of the todo-count plan by confirming focused controller and widget coverage for cached active todo counts and by closing the plan status with code/test completion; `TodoBoardStore` APIs and compatibility behavior remained unchanged.
+- 2026-06-16T20:18:32Z [CODE] Implemented Phase 2 of the todo-count plan in `board_workspace_page.dart`: board rebuilds now consume `BoardSessionController.activeTodoCountsByCardId` instead of synchronously reading the active todo sidecar, while card-face checklist/todo progress rendering remains unchanged.
+- 2026-06-16T19:01:24Z [CODE] Implemented Phase 1 of the todo-count plan in `BoardSessionController`: active todo sidecar counts are now cached in controller state, refreshed asynchronously from the current `activeTodoPath`, cleared for missing/unreadable paths, and protected by a refresh token so stale reads cannot overwrite newer board/path state.
 - 2026-06-16T17:53:42Z [CODE] Split note timestamp formatting between UI and storage: in-app note cards now display `Month Day, Year h:mm AM/PM`, while Markdown persistence still uses the existing full ISO timestamp with timezone offset.
 - 2026-06-16T17:37:30Z [CODE] Note-composer keyboard shortcuts now match chat-style semantics: plain `Enter` submits the note, while only `Shift+Enter` inserts a newline at the current cursor/selection.
 - 2026-06-16T16:01:11Z [CODE] The note composer now uses multiline text input with button-only submission, so newline entry no longer posts the note and saved notes preserve embedded line breaks.
@@ -79,6 +83,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-06-16T20:37:49Z [TOOL] Running multiple `flutter test` processes in parallel on this workspace can race in `build/unit_test_assets/NativeAssetsManifest.json` setup and produce a `PathNotFoundException`; rerunning the focused tests sequentially avoids the Flutter tool issue and validates the todo-count work cleanly.
 - 2026-06-04T09:13:00-07:00 [CODE] The Windows `Create File` regression was caused by `openFile`/`getSaveLocation` calls in `board_file_access_service.dart` being wrapped in a `2s` timeout, which made normal human picker interaction fall back to the manual relative-path prompt.
 - 2026-06-04T05:18:20-07:00 [TOOL] Supersedes the 2026-06-04T05:02:23-07:00 verification note: sandboxed Dart/Flutter commands timed out, but escalated `dart format` completed with no changes, escalated `flutter analyze` passed, and the focused `flutter test test/features/board/board_workspace_page_test.dart` passed.
 - 2026-06-04T05:18:20-07:00 [TOOL] Full escalated `flutter test` passed the new Windows-key shortcut test but failed existing `test/data/safe_file_store_test.dart` because expected backup count 2 was actual 0; provenance for that failure is UNCONFIRMED.
@@ -108,6 +113,9 @@
 
 ## [OUTCOMES]
 
+- 2026-06-16T20:37:49Z [TOOL] Todo-count Phase 3 validation passed with `dart format .` (required elevation for Flutter/Dart cache writes outside the workspace), `flutter analyze`, and focused `flutter test --no-pub` runs for `board_session_controller_test.dart`, `board_workspace_page_test.dart`, and `todo_board_store_test.dart`. Remaining unverified work is manual in-app validation only.
+- 2026-06-16T20:18:32Z [TOOL] Todo-count Phase 2 validation passed: `dart format .` (required elevation for Flutter/Dart cache writes outside the workspace), `flutter analyze`, and full `flutter test`. Remaining follow-up is the planned Phase 3 cleanup/coverage pass; Markdown and `todo.txt` compatibility remain unchanged in Phases 1-2.
+- 2026-06-16T19:01:24Z [TOOL] Todo-count Phase 1 validation passed: `dart format .` (required elevation for Flutter/Dart cache writes outside the workspace), `flutter analyze`, and full `flutter test`. Remaining planned follow-up is Phase 2 widget adoption so board rebuilds stop reading the active todo sidecar synchronously.
 - 2026-06-16T17:53:42Z [TOOL] Note timestamp display validation passed: `dart format lib/domain/board/board_formatters.dart lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
 - 2026-06-16T17:37:30Z [TOOL] Note shortcut validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.
 - 2026-06-16T16:01:11Z [TOOL] Multiline note-composer validation passed: `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`.

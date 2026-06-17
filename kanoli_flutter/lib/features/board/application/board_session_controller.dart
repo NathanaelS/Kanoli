@@ -12,6 +12,7 @@ import '../../../core/files/io_error_formatter.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../data/board/json_board_store.dart';
 import '../../../data/board/markdown_board_store.dart';
+import '../../../data/board/todo_board_store.dart';
 import '../../../domain/board/board_entities.dart';
 
 class BoardTabState {
@@ -48,12 +49,15 @@ class BoardSessionController extends ChangeNotifier {
     required this.logger,
     MarkdownBoardStore? markdownBoardStore,
     JsonBoardStore? jsonBoardStore,
+    TodoBoardStore? todoBoardStore,
   }) : _markdownBoardStore = markdownBoardStore ?? MarkdownBoardStore(),
-       _jsonBoardStore = jsonBoardStore ?? JsonBoardStore();
+       _jsonBoardStore = jsonBoardStore ?? JsonBoardStore(),
+       _todoBoardStore = todoBoardStore ?? TodoBoardStore();
 
   final AppLogger logger;
   final MarkdownBoardStore _markdownBoardStore;
   final JsonBoardStore _jsonBoardStore;
+  final TodoBoardStore _todoBoardStore;
 
   final List<BoardTabState> _boardTabs = <BoardTabState>[];
   List<BoardColumn> _columns = <BoardColumn>[];
@@ -61,6 +65,9 @@ class BoardSessionController extends ChangeNotifier {
   String? _lastError;
   List<String> _missingSessionPaths = <String>[];
   String? _activeTodoPath;
+  Map<String, TodoBoardItemCounts> _activeTodoCountsByCardId =
+      const <String, TodoBoardItemCounts>{};
+  int _activeTodoCountsRefreshToken = 0;
 
   BoardFilter _boardFilter = BoardFilter();
   bool _showArchiveOnly = false;
@@ -80,6 +87,10 @@ class BoardSessionController extends ChangeNotifier {
   String? get selectedTabId => _selectedTabId;
   String? get lastError => _lastError;
   String? get activeTodoPath => _activeTodoPath;
+  Map<String, TodoBoardItemCounts> get activeTodoCountsByCardId =>
+      UnmodifiableMapView<String, TodoBoardItemCounts>(
+        _activeTodoCountsByCardId,
+      );
   UnmodifiableListView<String> get missingSessionPaths =>
       UnmodifiableListView<String>(_missingSessionPaths);
 
@@ -787,6 +798,8 @@ class BoardSessionController extends ChangeNotifier {
     _showBoardTabBar = true;
     _missingSessionPaths = <String>[];
     _activeTodoPath = null;
+    _activeTodoCountsByCardId = const <String, TodoBoardItemCounts>{};
+    _activeTodoCountsRefreshToken++;
     _clearError();
     unawaited(_persistSessionState());
     logger.info('clearSession');
@@ -866,7 +879,10 @@ class BoardSessionController extends ChangeNotifier {
   }
 
   void setActiveTodoPath(String? path) {
-    _activeTodoPath = path?.trim().isEmpty ?? true ? null : path;
+    _activeTodoPath = path?.trim().isEmpty ?? true
+        ? null
+        : File(path!).absolute.path;
+    unawaited(_refreshActiveTodoCounts(notify: true));
     notifyListeners();
   }
 
@@ -972,6 +988,62 @@ class BoardSessionController extends ChangeNotifier {
     _prefs ??= await SharedPreferences.getInstance();
     final normalizedBoardPath = File(boardPath).absolute.path;
     _activeTodoPath = await todoPathForBoard(normalizedBoardPath);
+    await _refreshActiveTodoCounts(notify: false);
+  }
+
+  Future<void> _refreshActiveTodoCounts({required bool notify}) async {
+    final refreshToken = ++_activeTodoCountsRefreshToken;
+    final path = _activeTodoPath;
+    if (path == null || path.trim().isEmpty) {
+      _setActiveTodoCounts(
+        const <String, TodoBoardItemCounts>{},
+        refreshToken: refreshToken,
+        notify: notify,
+      );
+      return;
+    }
+
+    try {
+      final todoFile = File(path);
+      if (!await todoFile.exists()) {
+        _setActiveTodoCounts(
+          const <String, TodoBoardItemCounts>{},
+          refreshToken: refreshToken,
+          notify: notify,
+        );
+        return;
+      }
+
+      final text = await todoFile.readAsString();
+      _setActiveTodoCounts(
+        _todoBoardStore.countsByCardId(text: text),
+        refreshToken: refreshToken,
+        notify: notify,
+      );
+    } on FileSystemException {
+      _setActiveTodoCounts(
+        const <String, TodoBoardItemCounts>{},
+        refreshToken: refreshToken,
+        notify: notify,
+      );
+    }
+  }
+
+  void _setActiveTodoCounts(
+    Map<String, TodoBoardItemCounts> counts, {
+    required int refreshToken,
+    required bool notify,
+  }) {
+    if (refreshToken != _activeTodoCountsRefreshToken) {
+      return;
+    }
+    if (mapEquals(_activeTodoCountsByCardId, counts)) {
+      return;
+    }
+    _activeTodoCountsByCardId = counts;
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   String _todoPathPrefsKey(String normalizedBoardPath) {
