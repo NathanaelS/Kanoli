@@ -37,6 +37,8 @@ class BoardWorkspacePage extends StatefulWidget {
 }
 
 class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
+  static const double _boardViewportSoftEdgeWidth = 28;
+  static const double _columnViewportSoftEdgeHeight = 20;
   final AuraIntensity _auraIntensity = AuraIntensity.subtle;
   final TodoBoardStore _todoBoardStore = TodoBoardStore();
   final FocusNode _shortcutFocusNode = FocusNode(
@@ -573,6 +575,12 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: <Widget>[
+              if (_showTimelineView)
+                Text(
+                  'All cards timeline',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              const Spacer(),
               SegmentedButton<bool>(
                 segments: const <ButtonSegment<bool>>[
                   ButtonSegment<bool>(
@@ -593,12 +601,6 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                   });
                 },
               ),
-              const Spacer(),
-              if (_showTimelineView)
-                Text(
-                  'All cards timeline',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
             ],
           ),
         ),
@@ -630,59 +632,103 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                     unawaited(_openItemEditor(itemId));
                   },
                 )
-              : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      if (boardColumns.isEmpty)
-                        const SizedBox(
-                          width: 320,
-                          child: Card(
-                            child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: Text(
-                                'No columns to show for the current view.',
+              : _softenedBoardViewport(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (boardColumns.isEmpty)
+                          const SizedBox(
+                            width: 320,
+                            child: Card(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Text(
+                                  'No columns to show for the current view.',
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ...boardColumns.map((BoardColumn column) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: _columnCard(
-                            context,
-                            column,
-                            visuals,
-                            todoCountsByCardId,
-                          ),
-                        );
-                      }),
-                      if (!widget.controller.isFilterActive)
-                        SizedBox(
-                          width: 240,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: visuals.addColumnButtonGradient,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.outline),
+                        ...boardColumns.map((BoardColumn column) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: _columnCard(
+                              context,
+                              column,
+                              visuals,
+                              todoCountsByCardId,
                             ),
-                            child: OutlinedButton.icon(
-                              onPressed: _addColumn,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.foreground,
-                                backgroundColor: Colors.transparent,
-                                side: BorderSide.none,
+                          );
+                        }),
+                        if (!widget.controller.isFilterActive)
+                          SizedBox(
+                            width: 240,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: visuals.addColumnButtonGradient,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppTheme.outline),
                               ),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Column'),
+                              child: OutlinedButton.icon(
+                                onPressed: _addColumn,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.foreground,
+                                  backgroundColor: Colors.transparent,
+                                  side: BorderSide.none,
+                                ),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add Column'),
+                              ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
+        ),
+      ],
+    );
+  }
+
+  Widget _softenedBoardViewport({required Widget child}) {
+    const edgeGradient = LinearGradient(
+      colors: <Color>[AppTheme.background, Color(0x0015141B)],
+    );
+
+    return Stack(
+      children: <Widget>[
+        child,
+        Positioned(
+          top: 0,
+          bottom: 0,
+          left: 0,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: _boardViewportSoftEdgeWidth,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(gradient: edgeGradient),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          bottom: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: _boardViewportSoftEdgeWidth,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: <Color>[Color(0x0015141B), AppTheme.background],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -788,55 +834,64 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
                         _addItemButton(column, visuals),
                       ],
                     )
-                  : SingleChildScrollView(
-                      child: Column(
-                        children: <Widget>[
-                          if (!widget.controller.isFilterActive)
-                            for (
-                              var index = 0;
-                              index <= column.items.length;
-                              index++
-                            )
-                              Column(
-                                children: <Widget>[
-                                  _columnDropTarget(
-                                    column: column,
-                                    destinationItemId:
-                                        index < column.items.length
-                                        ? column.items[index].id
-                                        : null,
-                                  ),
-                                  if (index < column.items.length)
-                                    _itemDropTarget(
-                                      column: column,
-                                      destinationItemId: column.items[index].id,
-                                      child: _itemTile(
-                                        item: column.items[index],
-                                        sourceColumn: column,
-                                        todoCounts:
-                                            todoCountsByCardId[column
-                                                .items[index]
-                                                .id],
-                                        visuals: visuals,
+                  : _ColumnScrollFade(
+                      fadeExtent: _columnViewportSoftEdgeHeight,
+                      childBuilder: (ScrollController controller) {
+                        return SingleChildScrollView(
+                          controller: controller,
+                          child: Column(
+                            children: <Widget>[
+                              if (!widget.controller.isFilterActive)
+                                for (
+                                  var index = 0;
+                                  index <= column.items.length;
+                                  index++
+                                )
+                                  Column(
+                                    children: <Widget>[
+                                      _columnDropTarget(
+                                        column: column,
+                                        destinationItemId:
+                                            index < column.items.length
+                                            ? column.items[index].id
+                                            : null,
                                       ),
-                                    ),
-                                ],
-                              )
-                          else
-                            ...column.items.map((BoardItem item) {
-                              return _itemTile(
-                                item: item,
-                                sourceColumn: column,
-                                todoCounts: todoCountsByCardId[item.id],
-                                visuals: visuals,
-                              );
-                            }),
-                          if (!widget.controller.isFilterActive) ...<Widget>[
-                            const SizedBox(height: 8),
-                            _addItemButton(column, visuals),
-                          ],
-                        ],
-                      ),
+                                      if (index < column.items.length)
+                                        _itemDropTarget(
+                                          column: column,
+                                          destinationItemId:
+                                              column.items[index].id,
+                                          child: _itemTile(
+                                            item: column.items[index],
+                                            sourceColumn: column,
+                                            todoCounts:
+                                                todoCountsByCardId[column
+                                                    .items[index]
+                                                    .id],
+                                            visuals: visuals,
+                                          ),
+                                        ),
+                                    ],
+                                  )
+                              else
+                                ...column.items.map((BoardItem item) {
+                                  return _itemTile(
+                                    item: item,
+                                    sourceColumn: column,
+                                    todoCounts: todoCountsByCardId[item.id],
+                                    visuals: visuals,
+                                  );
+                                }),
+                              if (!widget
+                                  .controller
+                                  .isFilterActive) ...<Widget>[
+                                const SizedBox(height: 8),
+                                _addItemButton(column, visuals),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
                     ),
             ),
           ],
@@ -2791,6 +2846,138 @@ class _BoardWorkspacePageState extends State<BoardWorkspacePage> {
       await prefs.setBool(prefKey, false);
     }
     return didConfirm;
+  }
+}
+
+class _ColumnScrollFade extends StatefulWidget {
+  const _ColumnScrollFade({
+    required this.fadeExtent,
+    required this.childBuilder,
+  });
+
+  final double fadeExtent;
+  final Widget Function(ScrollController controller) childBuilder;
+
+  @override
+  State<_ColumnScrollFade> createState() => _ColumnScrollFadeState();
+}
+
+class _ColumnScrollFadeState extends State<_ColumnScrollFade> {
+  final ScrollController _controller = ScrollController();
+  bool _showTopFade = false;
+  bool _showBottomFade = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_updateFadeState);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updateFadeState();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ColumnScrollFade oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updateFadeState();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_updateFadeState);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _updateFadeState() {
+    if (!_controller.hasClients) {
+      if (_showTopFade || _showBottomFade) {
+        setState(() {
+          _showTopFade = false;
+          _showBottomFade = false;
+        });
+      }
+      return;
+    }
+
+    final position = _controller.position;
+    final showTopFade = position.pixels > position.minScrollExtent + 0.5;
+    final showBottomFade = position.pixels < position.maxScrollExtent - 0.5;
+    if (showTopFade == _showTopFade && showBottomFade == _showBottomFade) {
+      return;
+    }
+
+    setState(() {
+      _showTopFade = showTopFade;
+      _showBottomFade = showBottomFade;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final child = NotificationListener<ScrollMetricsNotification>(
+      onNotification: (ScrollMetricsNotification notification) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _updateFadeState();
+          }
+        });
+        return false;
+      },
+      child: widget.childBuilder(_controller),
+    );
+
+    if (!_showTopFade && !_showBottomFade) {
+      return child;
+    }
+
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (Rect bounds) {
+        if (bounds.height <= 0) {
+          return const LinearGradient(
+            colors: <Color>[Colors.black, Colors.black],
+          ).createShader(bounds);
+        }
+
+        final fadeFraction = (widget.fadeExtent / bounds.height).clamp(
+          0.0,
+          0.5,
+        );
+        final colors = <Color>[];
+        final stops = <double>[];
+
+        if (_showTopFade) {
+          colors.addAll(const <Color>[Colors.transparent, Colors.black]);
+          stops.addAll(<double>[0, fadeFraction]);
+        } else {
+          colors.add(Colors.black);
+          stops.add(0);
+        }
+
+        if (_showBottomFade) {
+          colors.addAll(const <Color>[Colors.black, Colors.transparent]);
+          stops.addAll(<double>[1 - fadeFraction, 1]);
+        } else {
+          colors.add(Colors.black);
+          stops.add(1);
+        }
+
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
+          stops: stops,
+        ).createShader(bounds);
+      },
+      child: child,
+    );
   }
 }
 

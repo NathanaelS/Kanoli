@@ -58,9 +58,11 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   List<TodoListEntry> _todoItems = <TodoListEntry>[];
   List<String> _otherTodoLines = <String>[];
   final TextEditingController _todoAddController = TextEditingController();
+  final FocusNode _todoAddFocusNode = FocusNode();
   final TextEditingController _noteComposerController = TextEditingController();
   final FocusNode _noteComposerFocusNode = FocusNode();
   final TextEditingController _labelsController = TextEditingController();
+  final Map<String, FocusNode> _checklistItemFocusNodes = <String, FocusNode>{};
   Timer? _pendingDraftSave;
 
   String get _priorityFormValue {
@@ -128,9 +130,13 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   void dispose() {
     _flushPendingDraftSave();
     _todoAddController.dispose();
+    _todoAddFocusNode.dispose();
     _noteComposerController.dispose();
     _noteComposerFocusNode.dispose();
     _labelsController.dispose();
+    for (final focusNode in _checklistItemFocusNodes.values) {
+      focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -551,7 +557,9 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
             ),
           ],
         ),
-        ..._checklists.map((BoardChecklist checklist) {
+        ..._checklists.asMap().entries.map((checklistEntry) {
+          final checklistIndex = checklistEntry.key;
+          final checklist = checklistEntry.value;
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: Padding(
@@ -575,6 +583,9 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                       IconButton(
                         onPressed: () {
                           setState(() {
+                            for (final item in checklist.items) {
+                              _disposeChecklistItemFocusNode(item.id);
+                            }
                             _checklists.remove(checklist);
                             _saveDraft();
                           });
@@ -583,7 +594,9 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                       ),
                     ],
                   ),
-                  ...checklist.items.map((BoardChecklistItem item) {
+                  ...checklist.items.asMap().entries.map((itemEntry) {
+                    final itemIndex = itemEntry.key;
+                    final item = itemEntry.value;
                     return Row(
                       children: <Widget>[
                         Checkbox(
@@ -597,7 +610,11 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                         ),
                         Expanded(
                           child: TextFormField(
+                            key: ValueKey<String>(
+                              'checklist-item-$checklistIndex-$itemIndex',
+                            ),
                             initialValue: item.text,
+                            focusNode: _focusNodeForChecklistItem(item.id),
                             decoration: const InputDecoration(
                               hintText: 'Checklist item',
                             ),
@@ -605,11 +622,14 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                               item.text = value;
                               _scheduleDraftSave();
                             },
+                            onFieldSubmitted: (_) =>
+                                _submitChecklistItem(checklist, item),
                           ),
                         ),
                         IconButton(
                           onPressed: () {
                             setState(() {
+                              _disposeChecklistItemFocusNode(item.id);
                               checklist.items.remove(item);
                               _saveDraft();
                             });
@@ -748,7 +768,9 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
             children: <Widget>[
               Expanded(
                 child: TextField(
+                  key: const ValueKey<String>('todo-add-input'),
                   controller: _todoAddController,
+                  focusNode: _todoAddFocusNode,
                   decoration: const InputDecoration(hintText: 'Add todo'),
                   onSubmitted: (_) => _addTodo(),
                 ),
@@ -1068,6 +1090,52 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       _todoItems.add(TodoListEntry.fromLine(line: text, isCompleted: false));
       _todoAddController.clear();
       _saveTodoList();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      FocusScope.of(context).requestFocus(_todoAddFocusNode);
+    });
+  }
+
+  FocusNode _focusNodeForChecklistItem(String itemId) {
+    return _checklistItemFocusNodes.putIfAbsent(itemId, FocusNode.new);
+  }
+
+  void _disposeChecklistItemFocusNode(String itemId) {
+    _checklistItemFocusNodes.remove(itemId)?.dispose();
+  }
+
+  void _submitChecklistItem(BoardChecklist checklist, BoardChecklistItem item) {
+    if (item.text.trim().isEmpty) {
+      return;
+    }
+
+    final itemIndex = checklist.items.indexOf(item);
+    if (itemIndex < 0) {
+      return;
+    }
+
+    final nextItem = itemIndex + 1 < checklist.items.length
+        ? checklist.items[itemIndex + 1]
+        : null;
+    final focusItem = nextItem != null && nextItem.text.trim().isEmpty
+        ? nextItem
+        : BoardChecklistItem(text: '');
+
+    setState(() {
+      if (!identical(focusItem, nextItem)) {
+        checklist.items.insert(itemIndex + 1, focusItem);
+      }
+      _saveDraft();
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _focusNodeForChecklistItem(focusItem.id).requestFocus();
     });
   }
 

@@ -103,6 +103,87 @@ void main() {
 
     expect(find.text('1/2'), findsOneWidget);
   });
+
+  testWidgets('board tab row stays hidden by default after opening a board', (
+    WidgetTester tester,
+  ) async {
+    final boardPath = _tempPath('_hidden_tabs.md');
+    final markdownStore = MarkdownBoardStore();
+    markdownStore.save(
+      filePath: boardPath,
+      columns: <BoardColumn>[
+        BoardColumn(
+          title: 'Backlog',
+          items: <BoardItem>[BoardItem(id: 'alpha', title: 'Alpha task')],
+        ),
+      ],
+    );
+    final controller = BoardSessionController(
+      logger: AppLogger(environment: AppEnvironment.dev),
+      markdownBoardStore: markdownStore,
+    );
+    await controller.openBoard(boardPath);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BoardWorkspacePage(
+          environment: AppEnvironment.dev,
+          controller: controller,
+          fileAccessService: _NoopBoardFileAccessService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Board'), findsOneWidget);
+    expect(find.text('Timeline'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+  });
+
+  testWidgets(
+    'Board and Timeline toggle is right aligned in workspace header',
+    (WidgetTester tester) async {
+      final boardPath = _tempPath('_alignment.md');
+      final markdownStore = MarkdownBoardStore();
+      markdownStore.save(
+        filePath: boardPath,
+        columns: <BoardColumn>[
+          BoardColumn(
+            title: 'Backlog',
+            items: <BoardItem>[BoardItem(id: 'a', title: 'Alpha')],
+          ),
+        ],
+      );
+      final controller = BoardSessionController(
+        logger: AppLogger(environment: AppEnvironment.dev),
+        markdownBoardStore: markdownStore,
+      );
+      await controller.openBoard(boardPath);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BoardWorkspacePage(
+            environment: AppEnvironment.dev,
+            controller: controller,
+            fileAccessService: _NoopBoardFileAccessService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scaffoldRect = tester.getRect(find.byType(Scaffold));
+      final toggleRect = tester.getRect(
+        find.byWidgetPredicate(
+          (Widget widget) => widget is SegmentedButton<bool>,
+        ),
+      );
+
+      expect(
+        toggleRect.right,
+        moreOrLessEquals(scaffoldRect.right - 16, epsilon: 1),
+      );
+    },
+  );
 }
 
 String _tempPath(String extension) {

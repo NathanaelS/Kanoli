@@ -157,19 +157,25 @@ void main() {
     );
   });
 
+  test('board tab bar defaults hidden on launch', () {
+    final controller = BoardSessionController(logger: logger);
+
+    expect(controller.showBoardTabBar, isFalse);
+  });
+
   test('toggles board tab bar visibility without affecting session tabs', () {
     final controller = BoardSessionController(logger: logger);
 
-    expect(controller.showBoardTabBar, isTrue);
+    expect(controller.showBoardTabBar, isFalse);
 
     controller.toggleBoardTabBarVisibility();
 
-    expect(controller.showBoardTabBar, isFalse);
+    expect(controller.showBoardTabBar, isTrue);
     expect(controller.boardTabs, isEmpty);
 
-    controller.setBoardTabBarVisibility(true);
+    controller.setBoardTabBarVisibility(false);
 
-    expect(controller.showBoardTabBar, isTrue);
+    expect(controller.showBoardTabBar, isFalse);
   });
 
   test('builds filtered cross-board results across open tabs', () async {
@@ -321,11 +327,11 @@ void main() {
     await controller.openBoard(boardPath);
     controller.toggleBoardTabBarVisibility();
 
-    expect(controller.showBoardTabBar, isFalse);
+    expect(controller.showBoardTabBar, isTrue);
 
     controller.clearSession();
 
-    expect(controller.showBoardTabBar, isTrue);
+    expect(controller.showBoardTabBar, isFalse);
     expect(controller.boardTabs, isEmpty);
   });
 
