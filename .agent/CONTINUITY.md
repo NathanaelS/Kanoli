@@ -91,6 +91,7 @@
 
 ## [DISCOVERIES]
 
+- 2026-06-17T14:40:45Z [TOOL] iPad/iOS release-readiness check: local macOS environment has Flutter 3.44.1, Xcode 26.5, CocoaPods 1.16.2, iOS deployment target 13.0, and `TARGETED_DEVICE_FAMILY = "1,2"`; `flutter build ios --release --no-codesign` succeeds. App Store release signing remains unready locally because only Apple Development and Developer ID Application identities were found, with no Apple Distribution identity or local iOS provisioning profiles.
 - 2026-06-16T20:37:49Z [TOOL] Running multiple `flutter test` processes in parallel on this workspace can race in `build/unit_test_assets/NativeAssetsManifest.json` setup and produce a `PathNotFoundException`; rerunning the focused tests sequentially avoids the Flutter tool issue and validates the todo-count work cleanly.
 - 2026-06-04T09:13:00-07:00 [CODE] The Windows `Create File` regression was caused by `openFile`/`getSaveLocation` calls in `board_file_access_service.dart` being wrapped in a `2s` timeout, which made normal human picker interaction fall back to the manual relative-path prompt.
 - 2026-06-04T05:18:20-07:00 [TOOL] Supersedes the 2026-06-04T05:02:23-07:00 verification note: sandboxed Dart/Flutter commands timed out, but escalated `dart format` completed with no changes, escalated `flutter analyze` passed, and the focused `flutter test test/features/board/board_workspace_page_test.dart` passed.
@@ -121,6 +122,7 @@
 
 ## [OUTCOMES]
 
+- 2026-06-17T14:40:45Z [TOOL] Completed current-environment iPad release assessment: unsigned iOS release artifact builds at `kanoli_flutter/build/ios/iphoneos/Runner.app`; remaining release work is App Store identity/provisioning, product metadata/privacy setup, bundle/display-name cleanup, iPad smoke testing, archive/export/upload, and App Review preparation.
 - 2026-06-17T21:00:00Z [TOOL] Revalidated the item-editor keyboard flow with `dart format lib/features/board/presentation/item_editor_sheet.dart test/features/board/item_editor_sheet_test.dart`, focused `flutter analyze` on those two files, and `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`. The todo regression test now requires two consecutive Enter submissions without manually re-focusing the field.
 - 2026-06-17T20:45:00Z [TOOL] Item-editor keyboard-flow validation passed with `dart format .`, `flutter analyze`, and focused `flutter test --no-pub test/features/board/item_editor_sheet_test.dart`. Coverage now asserts checklist Enter-to-next-item focus, todo Enter-to-add with retained input focus, and preserved note Enter/Shift+Enter behavior.
 - 2026-06-17T11:55:24Z [TOOL] Header-alignment validation passed with `dart format .` (required elevation for Flutter/Dart cache writes outside the workspace), focused `flutter test --no-pub` runs for `board_workspace_page_test.dart` and `board_session_controller_test.dart`, plus full `flutter analyze` and full `flutter test`. Markdown/local-first behavior was untouched.
